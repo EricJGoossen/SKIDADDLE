@@ -16,7 +16,7 @@ public class FeedForward {
      * @param Kv velocity term
      * @param Ka acceleration term
      */
-    public FeedForward(double Ks, double Kv, double Ka) {
+    protected FeedForward(double Ks, double Kv, double Ka) {
         this.Ks = Ks;
         this.Kv = Kv;
         this.Ka = Ka;
@@ -29,7 +29,7 @@ public class FeedForward {
      * @param accel desired acceleration (units match Ka)
      * @return expected output
      */
-    public double compute(double vel, double accel) {
+    protected double compute(double vel, double accel) {
         return Math.copySign(Ks, vel) + Kv * vel + Ka * accel;
     }
 }

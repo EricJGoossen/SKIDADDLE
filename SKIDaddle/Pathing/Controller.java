@@ -144,7 +144,7 @@ public class Controller {
      * @param sensorMotion Sensor-derived MotionState
      * @param deltaT       Time step
      */
-    public void setDriveVel(MotionState target, MotionState sensorMotion, double deltaT) {
+    private void setDriveVel(MotionState target, MotionState sensorMotion, double deltaT) {
         sim.update(target, deltaT);
 
         if (Constants.SIMULATING) return;

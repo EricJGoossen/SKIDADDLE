@@ -51,13 +51,17 @@ public class Linear {
         // Initialize first segment
         target = path.points()[1];
         currDir = path.points()[0].dir(target);
-        maxVel = lookAhead.compute(path.points(), 0, initSpeed);
 
-        if (path.points().length < 3) return;
-
-        // Precompute next segment transition
-        nextDir = target.dir(path.points()[2]);
-        maxTransDist = kin.decelTravel(maxVel, currDir, nextDir);
+        if (path.points().length > 2) {
+            // Precompute next segment transition
+            maxVel = lookAhead.compute(path.points(), 0, initSpeed);
+            nextDir = target.dir(path.points()[2]);
+            maxTransDist = kin.decelTravel(maxVel, currDir, nextDir);
+        } else {
+            maxVel = new Vector();
+            nextDir = currDir;
+            maxTransDist = 0;
+        }
     }
 
     /**
@@ -119,6 +123,7 @@ public class Linear {
         // Compute remaining distance along segment
         double dist = target.minus(initPose.pos).projMag(currDir);
         double remDist = Math.max(0, dist - maxTransDist);
+        double finalDist = path.points()[path.points().length - 1].minus(initPose.pos).hypot();
 
         // Compute target speed
         double targetSpeed = kin.speedProfile(
@@ -134,7 +139,7 @@ public class Linear {
         log(updatedPose);
 
         // Check if robot has stopped
-        if (kin.atGoal(updatedPose.vel.hypot(), dist, Constants.DISTANCE_EPSILON, deltaT)) {
+        if (kin.atGoal(updatedPose.vel.hypot(), finalDist, Constants.DISTANCE_EPSILON, deltaT)) {
             updatedPose.moving = false;
             return updatedPose;
         }
@@ -153,9 +158,12 @@ public class Linear {
             maxVel = lookAhead.compute(path.points(), currSpline, updatedPose.vel.hypot());
 
             // Only compute nextDir and maxTransDist if another segment exists
-            if (currSpline < path.points().length - 2) {
+            if (currSpline < path.points().length - 1) {
                 nextDir = target.dir(path.points()[currSpline + 1]);
                 maxTransDist = kin.decelTravel(maxVel, currDir, nextDir);
+            } else {
+                nextDir = currDir;
+                maxTransDist = 0;
             }
         }
 

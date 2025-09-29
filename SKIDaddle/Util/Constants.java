@@ -60,5 +60,6 @@ public class Constants {
     public static final double LATERAL_MULTIPLIER = INCH_PER_TICK / LATERAL_INCH_PER_TICK;
 
     // Simulator constants
-    public static final double SIM_DELTA_TIME = 0.01; // s
+    public static final double SIM_DELTA_TIME = 0.01;
+    public static final double POINT_EPSILON = 1.5;
 }

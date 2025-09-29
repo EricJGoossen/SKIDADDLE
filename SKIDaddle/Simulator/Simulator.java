@@ -5,8 +5,6 @@ import java.util.ArrayList;
 import Simulator.Draw.Graph;
 import Util.Constants;
 import Util.MotionState;
-import Util.Path;
-import Util.Vector;
 import Util.Twist;
 
 /**
@@ -28,22 +26,8 @@ public class Simulator {
     /** Iteration counter */
     private int iterations = 0;
 
-    /** Path editing state */
-    private int changeIndex = 0;
-    private boolean changing = false;
-    private int currIndex = 0;
-    private Vector highlightedPoint = null;
-
-    /** Path points for interactive path building */
-    private final ArrayList<Vector> linePoints = new ArrayList<>();
-
     /** Graph drawer for visualization */
     private final Graph draw;
-
-    /** Tolerance for detecting the "same" point */
-    private final double pointEpsilon = 1.5;
-
-    // Constructors
 
     /**
      * Constructs a simulator with an initial pose.
@@ -144,131 +128,6 @@ public class Simulator {
             draw.moveRobot(pose.pos.lin.x, pose.pos.lin.y, pose.pos.ang.angle());
         }
     }
-
-    // Helpers
-
-    /** @return true if two points are within {@link #pointEpsilon} */
-    private boolean samePoint(Vector p1, Vector p2) {
-        return Math.abs(p1.x - p2.x) < pointEpsilon && Math.abs(p1.y - p2.y) < pointEpsilon;
-    }
-
-    /** @return index of a point in list, or -1 if not present */
-    private int inside(ArrayList<Vector> points, Vector point) {
-        for (int i = 0; i < points.size(); i++) {
-            if (points.get(i) == null) continue;
-            if (samePoint(points.get(i), point)) return i;
-        }
-        return -1;
-    }
-
-    // Path creation (interactive with Graph)
-
-    /**
-     * Interactive spline path creation.
-     *
-     * @param path path object to modify
-     */
-    public void getSplinePath(Path path) {
-        if (!Constants.SIMULATING) return;
-
-        Vector point = draw.clicked();
-
-        if (draw.rPressed()) {
-            linePoints.clear();
-            draw.clearPoints();
-            path.create(linePoints.toArray(new Vector[0]));
-            return;
-        }
-
-        if (draw.backspacePressed() && highlightedPoint != null) {
-            draw.removePoint(highlightedPoint);
-            linePoints.remove(highlightedPoint);
-            highlightedPoint = null;
-            changing = false;
-            path.create(linePoints.toArray(new Vector[0]));
-            return;
-        }
-
-        if (point == null) return;
-
-        int idx = inside(linePoints, point);
-        if (idx != -1) {
-            changeIndex = idx;
-            changing = true;
-            draw.highlightPoint(linePoints.get(changeIndex));
-            highlightedPoint = linePoints.get(changeIndex);
-            return;
-        }
-
-        if (changing) {
-            draw.clearHighlight();
-            draw.removePoint(linePoints.get(changeIndex));
-            linePoints.set(changeIndex, point);
-            draw.drawPoint(point);
-            changing = false;
-        } else if (currIndex < 4) {
-            linePoints.add(point);
-            draw.drawPoint(point);
-            currIndex++;
-        }
-
-        if (linePoints.size() == 4) {
-            path.create(linePoints.toArray(new Vector[4]), Constants.LINE_APPROX_EPSILON);
-        }
-    }
-
-    /**
-     * Interactive straight-line path creation.
-     *
-     * @param path path object to modify
-     */
-    public void getLinePath(Path path) {
-        if (!Constants.SIMULATING) return;
-
-        Vector point = draw.clicked();
-
-        if (draw.rPressed()) {
-            linePoints.clear();
-            draw.clearPoints();
-            path.create(linePoints.toArray(new Vector[0]));
-            return;
-        }
-
-        if (draw.backspacePressed() && highlightedPoint != null) {
-            draw.removePoint(highlightedPoint);
-            linePoints.remove(highlightedPoint);
-            highlightedPoint = null;
-            changing = false;
-            path.create(linePoints.toArray(new Vector[0]));
-            return;
-        }
-
-        if (point == null) return;
-
-        int idx = inside(linePoints, point);
-        if (idx != -1) {
-            changeIndex = idx;
-            changing = true;
-            draw.highlightPoint(linePoints.get(changeIndex));
-            highlightedPoint = linePoints.get(changeIndex);
-            return;
-        }
-
-        if (changing) {
-            draw.clearHighlight();
-            draw.removePoint(linePoints.get(changeIndex));
-            linePoints.set(changeIndex, point);
-            draw.drawPoint(point);
-            changing = false;
-        } else {
-            linePoints.add(point);
-            draw.drawPoint(point);
-        }
-
-        path.create(linePoints.toArray(new Vector[0]));
-    }
-
-    // Accessors
 
     /**
      * @return copy of the pose history

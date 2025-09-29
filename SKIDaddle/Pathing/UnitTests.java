@@ -1,6 +1,6 @@
 package Pathing;
-import java.util.ArrayList;
 
+import Simulator.PathCreater;
 import Simulator.Draw.Graph;
 import Util.Constants;
 import Util.Path;
@@ -8,253 +8,184 @@ import Util.PoseVelAcc;
 import Util.Vector;
 import Util.MotionState;
 
+/**
+ * Contains static unit test methods for path generation and traversal.
+ * Provides functionality for testing line paths, splines, Hermite-based
+ * paths, and interactive path creation in simulation.
+ */
 public class UnitTests {
-    private final Graph draw;
 
-    private final double deltaT = Constants.SIM_DELTA_TIME;
-
-    public UnitTests(Graph draw) {
-        this.draw = draw;
-    }
-
-    public void test() {
-        int test = 2;
-
-        switch (test) {
-            case 0:
-                pathGenTest();
-                break;
-            case 1:
-                //lineTest();
-                break;
-            case 2:
-                splineTest();
-                break;
-            case 3:
-                //initVelTest();
-                break;
-            case 4:
-                //linePathCreater();
-                break;
-            case 5:
-                //splinePathCreater();
-                break;
-        }
-    }
-
-    private void updateLog() {
+    /**
+     * Updates the graph and field displays if simulation is enabled.
+     *
+     * @param draw Graph instance to update
+     */
+    private static void updateLog(Graph draw) {
         if (Constants.SIMULATING) {
             draw.updateGraph();
             draw.updateField();
         }
     }
 
-    private void pathGenTest() {
-        if (Constants.SIMULATING) draw.setShowRobot(false);
-        Vector[] points = new Vector[4];
+    /**
+     * Runs a traversal test on a path using default initial pose.
+     *
+     * @param path   Path to follow
+     * @param deltaT Time step for simulation
+     * @param sleep  Delay between updates (seconds)
+     * @param draw   Graph instance for visualization
+     * @param move   Whether the robot should move
+     */
+    private static void pathTest(Path path, double deltaT, double sleep, Graph draw, boolean move) {
+        PoseVelAcc lin = new PoseVelAcc(path.points()[0], new Vector(), new Vector());
+        PoseVelAcc ang = new PoseVelAcc(new Vector(0, 1), new Vector(), new Vector());
+        MotionState pose = new MotionState(lin, ang);
 
-        points[0] = new Vector(0, 24);
-        points[1] = new Vector(0, 60);
-        points[2] = new Vector(-48,24);
-        points[3] = new Vector(-48, 60);
-
-        Path path = new Path();
-        path.create(points, Constants.LINE_APPROX_EPSILON);
-
-        path.draw(0, draw);
-        path.printPoints();
+        traverse(path, pose, deltaT, sleep, draw, move);
     }
 
-    /*public void lineTest() {
-        //Create path
-        ArrayList<Vector> points = new ArrayList<>();
+    /**
+     * Traverses a path starting from a given motion state.
+     *
+     * @param path   Path to follow
+     * @param pose   Initial motion state
+     * @param deltaT Time step for simulation
+     * @param sleep  Delay between updates (seconds)
+     * @param draw   Graph instance for visualization
+     * @param move   Whether the robot should move
+     */
+    private static void traverse(Path path, MotionState pose, double deltaT, double sleep, Graph draw, boolean move) {
+        pose.moving = true;
 
-        points.add(new Vector(0, 0));
-        points.add(new Vector(0, 24));
-        points.add(new Vector(24, 48));
-
-        //Starting pose
-        PoseVelAcc lin = new PoseVelAcc(points.get(0), new Vector(), new Vector());
-        PoseVelAcc ang = new PoseVelAcc(new Vector(), new Vector(), new Vector());
-
-        MotionState pose = new MotionState(lin, ang);
-        pose.moving = true; // Indicate that the robot is moving
-
-        //Init pathing
-        Controller driveTo = new Controller(draw, null, 0, points, null);
-        driveTo.setInitState(pose);
-
-        while (pose.moving) {
-            pose = driveTo.move(pose, new MotionState(), deltaT);
-
-            updateLog();
-
-            try {
-                Thread.sleep(10);
-            } catch (InterruptedException e) {
-
-            }
-        }
-
-        System.out.println("done");
-    }*/
-
-    public void splineTest() {
-        //Create path
-        Vector[] points = new Vector[4];
-
-        points[0] = new Vector(0, 24);
-        points[1] = new Vector(0, 60);
-        points[2] = new Vector(60,24);
-        points[3] = new Vector(60, 60);
-
-        Path path = new Path();
-        path.create(points, Constants.ANGLE_EPSILON);
-
-        //Starting pose
-        PoseVelAcc lin = new PoseVelAcc(points[0], new Vector(), new Vector());
-        PoseVelAcc ang = new PoseVelAcc(new Vector(1, 0), new Vector(), new Vector());
-
-        MotionState pose = new MotionState(lin, ang);
-        pose.moving = true; // Indicate that the robot is moving
-
-        //Init pathing
         Angular.Controller angController = Angular.turnToAngle(Math.toRadians(-135));
         Controller driveTo = new Controller(draw, null);
         driveTo.setInitState(pose);
 
-        //Setup graphing
         if (Constants.SIMULATING) draw.setShowRobot(true);
 
-        while (pose.moving) {
+        while (pose.moving && move) {
             pose = driveTo.update(pose, new MotionState(), path, angController, deltaT);
-
-            updateLog();
+            updateLog(draw);
 
             try {
-                Thread.sleep(10);
+                Thread.sleep((long) (sleep * 1000));
             } catch (InterruptedException e) {
-
+                // Ignore interruptions
             }
         }
 
         System.out.println("done");
     }
 
-    /*private void initVelTest() {
-        //Create path
-        Vector p1 = new Vector(0, 24);
-        Vector p2 = new Vector(60, 60);
+    /**
+     * Generates and tests a Bezier path from given control points.
+     *
+     * @param points Bezier control points
+     * @param deltaT Time step for simulation
+     */
+    private static void pathGenTest(Vector[] points, double deltaT) {
+        Graph draw = new Graph();
+        if (Constants.SIMULATING) draw.setShowRobot(false);
 
-        Vector initVel = new Vector(0, 24);
-        Vector exitVel = new Vector(0, 0);
+        Path path = new Path(new Path.Bezier(points));
+        path.draw(0, draw);
+        path.printPoints();
+    }
 
-        Path.Hermite herm = new Path.Hermite(p1, p2, initVel, exitVel);
+    /**
+     * Tests traversal of a line path.
+     *
+     * @param points Points of the path
+     * @param move   Whether the robot should move
+     * @param deltaT Time step for simulation
+     */
+    public static void linePathTest(Vector[] points, boolean move, double deltaT) {
+        Graph draw = new Graph();
+        Path path = new Path(points);
+        pathTest(path, deltaT, deltaT, draw, move);
+    }
 
-        //Init pathing
-        Controller driveTo = new Controller(draw, null, initVel.hypot(), herm, null);
-        driveTo.path.printPoints();
+    /**
+     * Tests traversal of a Bezier spline path.
+     *
+     * @param points Bezier control points
+     * @param move   Whether the robot should move
+     * @param deltaT Time step for simulation
+     */
+    public static void splinePathTest(Vector[] points, boolean move, double deltaT) {
+        Graph draw = new Graph();
+        Path path = new Path(new Path.Bezier(points));
+        pathTest(path, deltaT, deltaT, draw, move);
+    }
 
-        //Starting pose
-        PoseVelAcc lin = new PoseVelAcc(driveTo.path.points()[0], initVel, new Vector());
-        PoseVelAcc ang = new PoseVelAcc(new Vector(), new Vector(), new Vector());
+    /**
+     * Tests traversal of a Hermite path with specified initial and final velocities.
+     *
+     * @param p1     Start point
+     * @param v1     Initial velocity vector
+     * @param p2     End point
+     * @param v2     Final velocity vector
+     * @param move   Whether the robot should move
+     * @param deltaT Time step for simulation
+     */
+    public static void initialVelTest(Vector p1, Vector v1, Vector p2, Vector v2, boolean move, double deltaT) {
+        Graph draw = new Graph();
+        Path path = new Path(new Path.Hermite(p1, p2, v1, v2));
 
+        PoseVelAcc lin = new PoseVelAcc(p1, v1, new Vector());
+        PoseVelAcc ang = new PoseVelAcc(new Vector(0, 1), new Vector(), new Vector());
         MotionState pose = new MotionState(lin, ang);
-        pose.moving = true; // Indicate that the robot is moving
 
-        driveTo.setInitState(pose);
-
-        //Setup graphing
-        if (Constants.SIMULATING) draw.setShowRobot(true);
-
-        
-        while (pose.moving) {
-            pose = driveTo.move(pose, new MotionState(), deltaT);
-
-            updateLog();
-
-            try {
-                Thread.sleep(10);
-            } catch (InterruptedException e) {
-
-            }
-        }
-
-        System.out.println("done");
+        traverse(path, pose, deltaT, deltaT, draw, move);
     }
 
-    public void linePathCreater() {
-        if (Constants.SIMULATING) draw.setShowRobot(false); // Hide the robot during path creation
+    /**
+     * Interactive line path creation test.
+     *
+     * @param move   Whether the robot should move
+     * @param deltaT Time step for simulation
+     */
+    public static void linePathCreater(boolean move, double deltaT) {
+        Graph draw = new Graph();
+        if (Constants.SIMULATING) draw.setShowRobot(false);
 
-        while(true) {
+        while (true) {
             try {
                 Thread.sleep(10);
             } catch (InterruptedException e) {
-                // Handle interruption
+                // Ignore interruptions
             }
 
-            //Init pathing
-            Controller driveTo = new Controller(draw, null);
-            driveTo.simLinePath(null);
+            Path path = PathCreater.linePath(draw);
+            updateLog(draw);
 
-            if (driveTo.path == null || driveTo.path.points().length < 2) continue;
-
-            //Starting pose
-            PoseVelAcc lin = new PoseVelAcc(driveTo.path.points()[0], new Vector(), new Vector());
-            PoseVelAcc ang = new PoseVelAcc(new Vector(), new Vector(), new Vector());
-
-            MotionState pose = new MotionState(lin, ang);
-            pose.moving = true; // Indicate that the robot is moving
-            driveTo.setInitState(pose);
-
-            while (pose.moving) {
-                try {
-                    pose = driveTo.move(pose, new MotionState(), deltaT);
-                } catch (IllegalStateException e) {
-                    System.out.println("Error setting path from pose: " + e.getMessage());
-                    break;
-                }
-
-                updateLog();
-            }
+            if (path.points() == null || path.points().length < 2) continue;
+            pathTest(path, deltaT, 0, draw, move);
         }
     }
 
-    public void splinePathCreater() {
-        if (Constants.SIMULATING) draw.setShowRobot(false); // Hide the robot during path creation
-        
+    /**
+     * Interactive Bezier spline path creation test.
+     *
+     * @param move   Whether the robot should move
+     * @param deltaT Time step for simulation
+     */
+    public static void splinePathCreater(boolean move, double deltaT) {
+        Graph draw = new Graph();
+        if (Constants.SIMULATING) draw.setShowRobot(false);
 
-        while(true) {
+        while (true) {
             try {
                 Thread.sleep(10);
             } catch (InterruptedException e) {
-                // Handle interruption
+                // Ignore interruptions
             }
 
-            //Init pathing
-            Controller driveTo = new Controller(draw, null);
-            driveTo.simSplinePath(null);
+            Path path = PathCreater.splinePath(draw);
+            updateLog(draw);
 
-            if (driveTo.path == null) continue; // No path created, continue waiting
-
-            //Starting pose
-            PoseVelAcc lin = new PoseVelAcc(driveTo.path.points()[0], new Vector(), new Vector());
-            PoseVelAcc ang = new PoseVelAcc(new Vector(), new Vector(), new Vector());
-
-            MotionState pose = new MotionState(lin, ang);
-            pose.moving = true; // Indicate that the robot is moving
-            driveTo.setInitState(pose);
-
-            while (pose.moving) {
-                try {
-                    pose = driveTo.move(pose, new MotionState(), deltaT);
-                } catch (IllegalStateException e) {
-                    System.out.println("Error setting path from pose: " + e.getMessage());
-                    break;
-                }
-
-                updateLog();
-            }
+            if (path.points() == null || path.points().length < 2) continue;
+            pathTest(path, deltaT, 0, draw, move);
         }
-    }*/
+    }
 }

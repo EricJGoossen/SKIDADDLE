@@ -28,10 +28,10 @@ public class Path {
         /**
          * Constructs a Hermite spline segment.
          *
-         * @param p1 Start point of the spline
-         * @param p2 End point of the spline
-         * @param v1 Tangent at the start point
-         * @param v2 Tangent at the end point
+         * @param p1 start point of the spline
+         * @param p2 end point of the spline
+         * @param v1 tangent at the start point
+         * @param v2 tangent at the end point
          */
         public Hermite(Vector p1, Vector p2, Vector v1, Vector v2) {
             this.p1 = p1;
@@ -42,60 +42,111 @@ public class Path {
     }
 
     /**
-     * Gets the points in the path
-     * @return Returns the points
+     * Represents a cubic Bezier curve defined by four control points.
+     */
+    public static class Bezier {
+        public Vector p0;
+        public Vector p1;
+        public Vector p2;
+        public Vector p3;
+
+        /**
+         * Constructs a cubic Bezier curve segment.
+         *
+         * @param p0 start point of the curve
+         * @param p1 first control point
+         * @param p2 second control point
+         * @param p3 end point of the curve
+         */
+        public Bezier(Vector p0, Vector p1, Vector p2, Vector p3) {
+            this.p0 = p0;
+            this.p1 = p1;
+            this.p2 = p2;
+            this.p3 = p3;
+        }
+
+        /**
+         * Constructs a cubic Bezier curve from an array of exactly four points.
+         *
+         * @param points array of four control points
+         * @throws IllegalArgumentException if the array length is not 4
+         */
+        public Bezier(Vector[] points) {
+            if (points.length != 4) {
+                throw new IllegalArgumentException(
+                    "Bezier must have exactly 4 control points: " + points.length
+                );
+            }
+
+            p0 = points[0];
+            p1 = points[1];
+            p2 = points[2];
+            p3 = points[3];
+        }
+    }
+
+    /** Constructs an empty path. */
+    public Path() {}
+
+    /**
+     * Creates a path from a list of points.
+     *
+     * @param points array of path points
+     */
+    public Path(Vector[] points) {
+        this.points = points;
+    }
+
+    /**
+     * Creates a path from a Bezier curve by flattening it into line segments.
+     *
+     * @param b cubic Bezier curve
+     */
+    public Path(Bezier b) {
+        create(b);
+    }
+
+    /**
+     * Creates a path from a Hermite spline by converting it into a Bezier curve.
+     *
+     * @param h Hermite spline
+     */
+    public Path(Hermite h) {
+        create(hermiteToBezier(h));
+    }
+
+    /**
+     * Converts a Bezier curve into an array of points by flattening.
+     *
+     * @param b cubic Bezier curve
+     */
+    private void create(Bezier b) {
+        Vector[] a = {b.p0, b.p1, b.p2, b.p3};
+
+        ArrayList<Vector> flatPts = flatten(a, new ArrayList<>(), Constants.LINE_APPROX_EPSILON);
+        flatPts.add(0, b.p0);
+
+        this.points = flatPts.toArray(new Vector[0]);
+    }
+
+    /**
+     * Returns the points in the path.
+     *
+     * @return array of path points
      */
     public Vector[] points() {
         return points;
     }
 
     /**
-     * Creates a path from a list of points.
-     *
-     * @param points Array of path points
-     */
-    public void create(Vector[] points) {
-        this.points = points;
-    }
-
-    /**
-     * Creates a path from a Hermite spline by converting it into a Bezier curve.
-     *
-     * @param h    Hermite spline
-     * @param eps  Error tolerance for curve flattening
-     */
-    public void create(Hermite h, double eps) {
-        Vector[] cPts = hermiteToBezier(h);
-        create(cPts, eps);
-    }
-
-    /**
-     * Creates a path from Bezier control points and flattens it into a series of line segments.
-     *
-     * @param cPts Four Bezier control points
-     * @param eps  Error tolerance for flattening
-     * @throws IllegalArgumentException if cPts does not contain exactly 4 elements
-     */
-    public void create(Vector[] cPts, double eps) {
-        if (cPts.length != 4) {
-            throw new IllegalArgumentException(
-                "Bezier must have exactly 4 control points: " + cPts.length
-            );
-        }
-
-        ArrayList<Vector> flatPts = flatten(cPts, new ArrayList<>(), eps);
-        flatPts.add(0, cPts[0]);
-        this.points = flatPts.toArray(new Vector[0]);
-    }
-
-    /**
      * Converts a Hermite spline into equivalent Bezier curve control points.
+     * Uses estimated travel time and acceleration constraints to scale tangents.
      *
      * @param h Hermite spline
-     * @return Array of 4 Bezier control points
+     * @return Bezier curve equivalent to the Hermite spline
      * @throws IllegalArgumentException if start and end points are too close together
      */
-    private Vector[] hermiteToBezier(Hermite h) {
+    private Bezier hermiteToBezier(Hermite h) {
         double d = h.p2.minus(h.p1).hypot();   // distance between p1 and p2
         double s1 = h.v1.hypot();              // magnitude of v1
         double s2 = h.v2.hypot();              // magnitude of v2
@@ -106,45 +157,42 @@ public class Path {
             );
         }
 
-        //esimate the travel time
+        // Estimate travel time based on average speed
         double vAve = 0.5 * (s1 + s2);
         double t = vAve < EPS ? 0 : d / vAve;
 
-        //Estimate the required accleration to reach the target
-        double aReq = (s2 * s2 - s1 * s1) / (2.0 * d); 
+        // Estimate the required acceleration to transition from v1 to v2
+        double aReq = (s2 * s2 - s1 * s1) / (2.0 * d);
 
-        //If estimated accelerated acceds max acceleration, travel time down
+        // If acceleration exceeds limits, scale travel time
         if (Math.abs(aReq) > ACCEL) {
             double scale = Math.sqrt(Math.abs(aReq) / ACCEL);
             t *= scale;
         }
 
-        //Reassemble Bezier curve
-        Vector p0 = h.p1;
-        Vector p1 = h.p1.plus(h.v1.times(t / 3.0));
-        Vector p2 = h.p2.minus(h.v2.times(t / 3.0));
-        Vector p3 = h.p2;
-
-        return new Vector[] {p0, p1, p2, p3};
+        // Construct equivalent Bezier curve
+        return new Bezier(
+            h.p1,
+            h.p1.plus(h.v1.times(t / 3.0)),
+            h.p2.minus(h.v2.times(t / 3.0)),
+            h.p2
+        );
     }
 
     /**
      * Finds midpoints between each consecutive pair of points.
      *
-     * @param pts Array of points
-     * @return Array of midpoints
+     * @param pts array of points
+     * @return array of midpoints
      */
     private Vector[] findMidPoints(Vector[] pts) {
         Vector[] mids = new Vector[pts.length - 1];
-
-        //Go through the points and find each midpoint
         for (int i = 0; i < pts.length - 1; i++) {
             mids[i] = new Vector(
                 (pts[i].x + pts[i + 1].x) / 2.0,
                 (pts[i].y + pts[i + 1].y) / 2.0
             );
         }
-
         return mids;
     }
 
@@ -152,16 +200,16 @@ public class Path {
      * Recursively flattens a Bezier curve into line segments within the error tolerance.
      *
      * @param p   Bezier control points
-     * @param fP  List accumulating resulting points
-     * @param eps Maximum allowable error
-     * @return List of points approximating the curve
+     * @param fP  list accumulating resulting points
+     * @param eps maximum allowable error
+     * @return list of points approximating the curve
      */
     private ArrayList<Vector> flatten(Vector[] p, ArrayList<Vector> fP, double eps) {
         Vector[] l = findMidPoints(p);
         Vector[] q = findMidPoints(l);
         Vector c = findMidPoints(q)[0];
 
-        //calculate deviation of straight-line approximation from curve
+        // Calculate deviation of straight-line approximation from curve
         double error = Math.max(
             Math.hypot(2 * p[1].x - p[2].x - p[0].x,
                        2 * p[1].y - p[2].y - p[0].y),
@@ -169,7 +217,7 @@ public class Path {
                        2 * p[2].y - p[3].y - p[1].y)
         );
 
-        //If deviation is low enough end, else keep going
+        // If deviation is acceptable, add endpoint; otherwise subdivide recursively
         if (error < eps) {
             fP.add(p[3]);
         } else {
@@ -192,8 +240,8 @@ public class Path {
     /**
      * Draws the path on a graph starting from a given index.
      *
-     * @param i     Index to begin drawing from
-     * @param graph Graph object to draw onto
+     * @param i     index to begin drawing from
+     * @param graph graph object to draw onto
      */
     public void draw(int i, Graph graph) {
         ArrayList<Vector> subPath = new ArrayList<>(

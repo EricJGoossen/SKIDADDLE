@@ -29,7 +29,7 @@ public class Graph extends JPanel {
      * Opens the main field visualization window, displaying the robot and paths.
      */
     private void openFieldWindow() {
-        String imagePath = "Simulator/Draw/field.png";
+        String imagePath = "SKIDADDLE/Simulator/Draw/field.png";
         ImageIcon imageIcon = new ImageIcon(imagePath);
 
         if (imageIcon.getIconWidth() == -1) {

@@ -27,7 +27,7 @@ class Field extends JPanel {
 
     /** Robot position and heading (radians). */
     private double objX, objY, orientation;
-    public boolean showRobot = true;
+    protected boolean showRobot = true;
 
     /** List of points to render and optional highlighted point. */
     private final java.util.List<Vector> points = new ArrayList<>();
@@ -66,7 +66,7 @@ class Field extends JPanel {
      *
      * @param fieldImage background field image
      */
-    public Field(Image fieldImage) {
+    protected Field(Image fieldImage) {
         this.fieldImage = fieldImage;
 
         setFocusable(true);
@@ -129,19 +129,19 @@ class Field extends JPanel {
      * @param y           Y position (field units)
      * @param orientation heading in radians (0 = facing up field)
      */
-    public void moveRobot(double x, double y, double orientation) {
+    protected void moveRobot(double x, double y, double orientation) {
         this.objX = x;
         this.objY = y;
         this.orientation = orientation;
     }
 
     /** Add a point to be drawn on the field. */
-    public void drawPoint(Vector v) {
+    protected void drawPoint(Vector v) {
         points.add(v);
     }
 
     /** Clear all points and remove highlight. */
-    public void clearPoints() {
+    protected void clearPoints() {
         points.clear();
         highlighted = null;
     }
@@ -151,7 +151,7 @@ class Field extends JPanel {
      *
      * @param v point to remove
      */
-    public void removePoint(Vector v) {
+    protected void removePoint(Vector v) {
         points.removeIf(p -> coordsEqual(p, v));
         if (highlighted != null && coordsEqual(highlighted, v)) {
             highlighted = null;
@@ -159,12 +159,12 @@ class Field extends JPanel {
     }
 
     /** Highlight a given point. */
-    public void highlightPoint(Vector v) {
+    protected void highlightPoint(Vector v) {
         highlighted = v;
     }
 
     /** Remove highlight. */
-    public void clearHighlight() {
+    protected void clearHighlight() {
         highlighted = null;
     }
 
@@ -172,7 +172,7 @@ class Field extends JPanel {
      * Create an empty path with the given style.
      * Replaces any existing series with the same label.
      */
-    public void createPath(String label, float alpha, Color color, float strokeWidth) {
+    protected void createPath(String label, float alpha, Color color, float strokeWidth) {
         seriesMap.remove(label);
 
         // Ensure no duplicate colors (nudges brightness if needed)
@@ -189,58 +189,58 @@ class Field extends JPanel {
     }
 
     /** Create a path and directly assign values. */
-    public void createPath(ArrayList<Vector> values, String label, float alpha, Color color, float strokeWidth) {
+    protected void createPath(ArrayList<Vector> values, String label, float alpha, Color color, float strokeWidth) {
         createPath(label, alpha, color, strokeWidth);
         seriesMap.get(label).values = values;
     }
 
     /** Add a new vertex to an existing path. */
-    public void addPathData(String label, Vector value) {
+    protected void addPathData(String label, Vector value) {
         FieldSeries s = seriesMap.get(label);
         if (s == null) throw new IllegalArgumentException("No path with label '" + label + "'");
         s.values.add(value);
     }
 
     /** Remove a spline by label. */
-    public void removeSpline(String label) {
+    protected void removeSpline(String label) {
         seriesMap.remove(label);
     }
 
     /** Clear all spline paths. */
-    public void clearSplines() {
+    protected void clearSplines() {
         seriesMap.clear();
     }
 
     /** @return whether Enter was pressed since last call */
-    public boolean consumeEnterPressed() {
+    protected boolean consumeEnterPressed() {
         boolean wasPressed = enterPressed;
         enterPressed = false;
         return wasPressed;
     }
 
     /** @return whether R was pressed since last call */
-    public boolean consumeRPressed() {
+    protected boolean consumeRPressed() {
         boolean wasPressed = rPressed;
         rPressed = false;
         return wasPressed;
     }
 
     /** @return whether Backspace was pressed since last call */
-    public boolean consumeBackspacePressed() {
+    protected boolean consumeBackspacePressed() {
         boolean wasPressed = backspacePressed;
         backspacePressed = false;
         return wasPressed;
     }
 
     /** @return last click position (field coords), or null if none */
-    public Vector consumeClick() {
+    protected Vector consumeClick() {
         Vector click = lastClick;
         lastClick = null;
         return click;
     }
 
     /** Trigger a repaint of the field. */
-    public void update() {
+    protected void update() {
         repaint();
     }
 

@@ -38,7 +38,7 @@ class Chart extends JPanel implements MouseMotionListener {
      * Constructs a Chart panel and sets up mouse listeners for
      * hovering and toggling series visibility.
      */
-    public Chart() {
+    protected Chart() {
         addMouseMotionListener(this);
 
         addMouseListener(new java.awt.event.MouseAdapter() {
@@ -66,7 +66,7 @@ class Chart extends JPanel implements MouseMotionListener {
      * @param color base color
      * @param strokeWidth line thickness
      */
-    public void createChart(String label, float alpha, Color color, float strokeWidth) {
+    protected void createChart(String label, float alpha, Color color, float strokeWidth) {
         seriesMap.remove(label);
 
         Color finalColor = color;
@@ -90,7 +90,7 @@ class Chart extends JPanel implements MouseMotionListener {
      * @param label series name
      * @param value numeric value to append
      */
-    public void addChartData(String label, double value) {
+    protected void addChartData(String label, double value) {
         ChartSeries s = seriesMap.get(label);
         if (s == null) throw new IllegalArgumentException("No chart with label '" + label + "'");
         s.values.add(value);
@@ -105,7 +105,7 @@ class Chart extends JPanel implements MouseMotionListener {
      * @param color line color
      * @param strokeWidth line thickness
      */
-    public void addChartData(String label, double value, float alpha, Color color, float strokeWidth) {
+    protected void addChartData(String label, double value, float alpha, Color color, float strokeWidth) {
         ChartSeries s = seriesMap.get(label);
         if (s == null) {
             s = new ChartSeries(label, alpha, color, strokeWidth);

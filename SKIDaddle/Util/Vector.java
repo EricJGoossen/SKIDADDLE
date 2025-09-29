@@ -181,6 +181,7 @@ public class Vector {
      * @return projection magnitude
      */
     public double projMag(Vector v) {
+        if (v.hypot() < Constants.ZERO_TOLERANCE) return 0;
         return this.dot(v) / v.hypot();
     }
 

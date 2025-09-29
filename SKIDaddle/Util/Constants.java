@@ -9,7 +9,7 @@ import java.awt.Color;
 public class Constants {
     // General
     public static final double ZERO_TOLERANCE = 1e-6; // floating-point tolerance
-    public static final boolean SIMULATING = true;    // toggle for simulator mode
+    public static final boolean SIMULATING = false;    // toggle for simulator mode
 
     // Linear motion constraints
     public static final double MAX_ACCELERATION = 50.0; // in/s^2
@@ -23,7 +23,7 @@ public class Constants {
 
     // Path generation
     public static final double LINE_APPROX_EPSILON = 0.01; // threshold when a curve is approximated as a line
-    public static final double LOOK_AHEAD_FACTOR = 10.0;   // scale factor for look-ahead distance
+    public static final double LOOK_AHEAD_FACTOR = 3.0;   // scale factor for look-ahead distance
     public static final MotionState INIT_STATE = new MotionState(); // default starting state
 
     // Path drawing

@@ -45,8 +45,8 @@ public class Constants {
     public static final Dual PID_P = new Dual();
     public static final Dual PID_I = new Dual();
     public static final Dual PID_D = new Dual();
-    public static final Dual PID_FV = new Dual(); // velocity feedforward
-    public static final Dual PID_FA = new Dual(); // acceleration feedforward
+    public static final Dual PID_FV = new Dual();
+    public static final Dual PID_FA = new Dual();
 
     // Motor feedforward gains
     public static final double PID_S = 0.713; // static friction

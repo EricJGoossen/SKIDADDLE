@@ -14,7 +14,7 @@ It was designed to address inefficiencies in Road Runner and generate more optim
 ---
 
 ## Setup
-SKIDADDLE is entirely library-based. To get started, clone this repository into your project, and import the library and use the provided methods.  
+SKIDADDLE is entirely library-based. To get started, clone this repository into your project, and import the library and use the provided methods. Then you will have to tune the inch per tick and PID values for SKIDADDLE to work properly.
 
 You can use SKIDADDLE in two ways:
 1. **Direct control:** Retrieve the linear/angular position, velocity, and acceleration, then feed them into your own PID system.  

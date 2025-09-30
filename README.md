@@ -1,7 +1,7 @@
 # SKIDADDLE
 
 ## Description
-**SKIDADDLE** is a physics-based, real-time dynamic pathing algorithm for FTC robotsics written in Java.  
+**SKIDADDLE** is a physics-based, real-time dynamic pathing algorithm for FTC robotics written in Java.  
 It was designed to address inefficiencies in Road Runner and generate more optimal paths.  
 
 **Key Features:**
@@ -33,8 +33,8 @@ Controller.MotorController lambda = (WheelSpeed s) -> {
 ```
 
 ## Usage Examples
-Autonomous with Bézier Curves
-This is how you would write a Bezier based rutine for Auton.
+### Autonomous with Bézier Curves  
+This is how you would write a Bezier based routine for Auton.  
 
 ```java
   Controller driveTo = new Controller(null, lambda); // instantiate pathing object. If not using the motor lambda, set it to null
@@ -55,8 +55,8 @@ This is how you would write a Bezier based rutine for Auton.
   }
 ```
 
-Tele-Op with Hermite Splines
-This is how you would write a Hermite based rutine for Tele-op.
+### Tele-Op with Hermite Splines
+This is how you would write a Hermite based routine for Tele-op.  
 
 ```java
   Controller driveTo = new Controller(null, lambda);
@@ -84,23 +84,58 @@ This is how you would write a Hermite based rutine for Tele-op.
 ## References
 
 ### Path
-| Method | Description |
-|--------|-------------|
-| `Path(Vector[] controlPoints)` | Creates a path using a vector array for control points. |
-| `Path(Bezier b)` | Creates a path from a Bézier object. |
-| `Path(Hermite h)` | Converts a Hermite spline into an optimal Bézier curve. |
+| Method | Parameters | Returns | Description |
+|--------|------------|---------|-------------|
+| `Path(Vector[] controlPoints)` | `controlPoints`: an array of 4 vectors | `Path` | Creates a path directly from a set of Bézier control points. |
+| `Path(Bezier b)` | `b`: a Bézier object | `Path` | Creates a path from a Bézier curve. |
+| `Path(Hermite h)` | `h`: a Hermite spline | `Path` | Converts a Hermite spline into an optimal Bézier curve for pathing. |
+
+**Bezier**  
+| Method | Parameters | Returns | Description |
+|--------|------------|---------|-------------|
+| `Bezier(Vector[] controlPoints)` | `controlPoints`: array of 4 vectors | `Bezier` | Defines a Bézier curve from four control points. |
+
+**Hermite**  
+| Method | Parameters | Returns | Description |
+|--------|------------|---------|-------------|
+| `Hermite(Vector start, Vector end, Vector startVel, Vector endVel)` | `start`: starting point<br>`end`: target point<br>`startVel`: starting velocity vector<br>`endVel`: desired exit velocity vector | `Hermite` | Defines a Hermite spline that smoothly connects a start and end state. |
+
+---
 
 ### Angular
-| Method | Description |
-|--------|-------------|
-| `Angular.turnToAngle(double theta)` | Returns a default lambda function for turning toward a target heading. |
+| Method | Parameters | Returns | Description |
+|--------|------------|---------|-------------|
+| `Angular.turnToAngle(double theta)` | `theta`: desired heading in radians | `Angular.Controller` (lambda) | Returns a default angular controller for turning toward a given target heading. |
+
+---
 
 ### Controller
-| Method | Description |
-|--------|-------------|
-| `Controller(Graph draw, MotorController motor)` | Creates a controller. If `draw` or `motor` are null, those behaviors are skipped. |
-| `setInitState(MotionState m)` | Sets the initial angular and linear position, velocity, and acceleration. |
-| `update(MotionState motion, MotionState sensorMotion, Path path, Angular.Controller angle, double deltaT)` | Computes the next state using the prior state, sensor data, path, angular controller, and timestep. Updates motors if a motor lambda was provided. |
+| Method | Parameters | Returns | Description |
+|--------|------------|---------|-------------|
+| `Controller(Graph draw, MotorController motor)` | `draw`: optional graphing utility (nullable)<br>`motor`: motor control lambda (nullable) | `Controller` | Creates a controller. If `draw` or `motor` are `null`, those behaviors are skipped. |
+| `setInitState(MotionState m)` | `m`: initial linear & angular position, velocity, and acceleration | `void` | Sets the initial state of the controller before motion begins. |
+| `update(MotionState motion, MotionState sensorMotion, Path path, Angular.Controller angle, double deltaT)` | `motion`: the last commanded state<br>`sensorMotion`: the current measured state (from localization)<br>`path`: target path<br>`angle`: angular controller lambda<br>`deltaT`: timestep in seconds | `MotionState` (the new commanded state) | Computes the next motion state based on path following and angular control. If a motor lambda was provided, updates the motors automatically. |
+
+---
+
+### MotionState
+| Field | Type | Description |
+|-------|------|-------------|
+| `linear` | `PoseVelAcc` | Linear position, velocity, acceleration. |
+| `angular` | `PoseVelAcc` | Angular position, velocity, acceleration. Stored as Vectors |
+
+**PoseVelAcc**  
+| Field | Type | Description |
+|-------|------|-------------|
+| `pos` | `Vector` | Position vector. |
+| `vel` | `Vector` | Velocity vector. |
+| `acc` | `Vector` | Acceleration vector. |
+
+**Vector**  
+| Field | Type | Description |
+|-------|------|-------------|
+| `x` | `double` | x component. |
+| `y` | `double` | y component. |
 
 ## Technical Explanation
 In short: SKIDADDLE continuously decomposes robot velocity into convergent and transverse components, prioritizing correction toward the path while dynamically planning lookahead transitions.  
@@ -150,3 +185,6 @@ The resulting system ensures that:
 - The transition occurs exactly when the remaining distance is less than the required deceleration distance.  
 
 This process combines motion profiling, velocity decomposition, adaptive curve flattening, and predictive lookahead to create smooth, dynamically feasible robot paths in real time.
+
+## License
+This project is licensed under the Apache License 2.0 – see the [LICENSE](LICENSE) file for details.

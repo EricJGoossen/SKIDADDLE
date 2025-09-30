@@ -113,6 +113,8 @@ public class Controller {
 
         MotionState updatedState = new MotionState(linPose, angPose);
 
+        if (motor == null) return updatedState;
+
         // Compute motor velocities and apply
         setDriveVel(new MotionState(updatedState), sensorMotion, deltaT);
 

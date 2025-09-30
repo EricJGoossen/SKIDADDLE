@@ -49,14 +49,14 @@ public class Constants {
     public static final Dual PID_FA = new Dual();
 
     // Motor feedforward gains
-    public static final double PID_S = 0.713; // static friction
-    public static final double PID_V = 0.178; // velocity gain
-    public static final double PID_A = 0.011; // acceleration gain
+    public static final double PID_S = 1; // static friction
+    public static final double PID_V = 0; // velocity gain
+    public static final double PID_A = 0; // acceleration gain
 
     // Robot physical constants
     public static final double INCH_PER_TICK = 1.0;
-    public static final double TRACK_WIDTH_TICKS = 16.31;
-    public static final double LATERAL_INCH_PER_TICK = 0.805;
+    public static final double TRACK_WIDTH_TICKS = 0;
+    public static final double LATERAL_INCH_PER_TICK = 0;
     public static final double LATERAL_MULTIPLIER = INCH_PER_TICK / LATERAL_INCH_PER_TICK;
 
     // Simulator constants

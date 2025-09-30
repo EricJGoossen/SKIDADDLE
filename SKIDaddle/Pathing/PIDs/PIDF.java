@@ -29,7 +29,7 @@ public class PIDF {
      * @param Kf velocity feedforward gain
      * @param Ka acceleration feedforward gain
      */
-    protected PIDF(Dual Kp, Dual Ki, Dual Kd, Dual Kf, Dual Ka) {
+    public PIDF(Dual Kp, Dual Ki, Dual Kd, Dual Kf, Dual Ka) {
         this.Kp = Kp;
         this.Ki = Ki;
         this.Kd = Kd;
@@ -45,7 +45,7 @@ public class PIDF {
      * @param deltaT time since last update (s)
      * @return correction vector
      */
-    protected Twist compute(MotionState target, MotionState actual, double deltaT) {
+    public Twist compute(MotionState target, MotionState actual, double deltaT) {
         if (deltaT < Constants.ZERO_TOLERANCE) {
             return new Twist();
         }

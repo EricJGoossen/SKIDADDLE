@@ -20,7 +20,7 @@ public class Kinematics {
     protected static class WheelSpeed {
         public static final int FL = 0, FR = 1, BL = 2, BR = 3;
 
-        private double[] vels = new double[4];
+        public double[] vels = new double[4];
         private double[] accels = new double[4];
 
         protected WheelSpeed() {}

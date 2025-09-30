@@ -1,5 +1,6 @@
 package Pathing;
 
+import Pathing.Kinematics.WheelSpeed;
 import Simulator.PathCreater;
 import Simulator.Draw.Graph;
 import Util.Constants;
@@ -172,7 +173,6 @@ public class UnitTests {
      */
     public static void splinePathCreater(boolean move, double deltaT) {
         Graph draw = new Graph();
-        if (Constants.SIMULATING) draw.setShowRobot(false);
 
         while (true) {
             try {

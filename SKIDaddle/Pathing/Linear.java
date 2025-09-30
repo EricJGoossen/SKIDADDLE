@@ -176,15 +176,15 @@ public class Linear {
      * @param pose Current robot state
      */
     private void log(PoseVelAcc pose) {
-        if (Constants.SIMULATING) {
-            draw.addChartData("pos", pose.pos.hypot());
-            draw.addChartData("vel", pose.vel.hypot());
-            draw.addChartData("accel", pose.accel.hypot());
-            draw.addChartData("max", maxVel.hypot());
-            draw.addChartData("line", currSpline);
+        if (!Constants.SIMULATING || draw == null) return;
 
-            path.draw(currSpline, draw);
-            draw.addPathData("Path traveled", pose.pos);
-        }
+        draw.addChartData("pos", pose.pos.hypot());
+        draw.addChartData("vel", pose.vel.hypot());
+        draw.addChartData("accel", pose.accel.hypot());
+        draw.addChartData("max", maxVel.hypot());
+        draw.addChartData("line", currSpline);
+
+        path.draw(currSpline, draw);
+        draw.addPathData("Path traveled", pose.pos);
     }
 }

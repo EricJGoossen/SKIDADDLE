@@ -133,10 +133,9 @@ public class Angular {
      * @param pose Current angular PoseVelAcc
      */
     private void log(PoseVelAcc pose) {
-        if (Constants.SIMULATING) {
-            draw.addChartData("angle", Math.abs(Math.toDegrees(pose.pos.angle())));
-            draw.addChartData("angleVel", pose.vel.hypot());
-            draw.addChartData("angleAccel", pose.accel.hypot());
-        }
-    }
+        if (!Constants.SIMULATING || draw == null) return;
+        draw.addChartData("angle", Math.abs(Math.toDegrees(pose.pos.angle())));
+        draw.addChartData("angleVel", pose.vel.hypot());
+        draw.addChartData("angleAccel", pose.accel.hypot());
+}
 }

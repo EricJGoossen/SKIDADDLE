@@ -61,7 +61,7 @@ public class Controller {
      * Initializes simulation charts and paths for visualization.
      */
     private void initLog() {
-        if (!Constants.SIMULATING) return;
+        if (!Constants.SIMULATING || draw == null) return;
 
         draw.createPath("Path traveled", 1f, Color.RED, 6f);
 
@@ -112,8 +112,9 @@ public class Controller {
         PoseVelAcc angPose = angularController.update(motion, deltaT);
 
         MotionState updatedState = new MotionState(linPose, angPose);
+        sim.update(updatedState, deltaT);
 
-        if (motor == null) return updatedState;
+        if (motor == null || Constants.SIMULATING) return updatedState;
 
         // Compute motor velocities and apply
         setDriveVel(new MotionState(updatedState), sensorMotion, deltaT);
@@ -147,10 +148,6 @@ public class Controller {
      * @param deltaT       Time step
      */
     private void setDriveVel(MotionState target, MotionState sensorMotion, double deltaT) {
-        sim.update(target, deltaT);
-
-        if (Constants.SIMULATING) return;
-
         // Add PIDF correction
         target.vel = target.vel.plus(pidf.compute(target, sensorMotion, deltaT));
 

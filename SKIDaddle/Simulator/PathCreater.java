@@ -44,7 +44,12 @@ public class PathCreater {
      * @return Generated path, or empty if not enough points
      */
     public static Path splinePath(Graph draw) {
-        if (!Constants.SIMULATING) return null;
+        if (!Constants.SIMULATING || draw == null) {
+            throw new IllegalStateException(
+                "Must be simulating to use path creater"
+                );
+        }
+
         Path path = new Path();
 
         Vector point = draw.clicked();
@@ -109,7 +114,12 @@ public class PathCreater {
      * @return Generated path, or empty if not enough points
      */
     public static Path linePath(Graph draw) {
-        if (!Constants.SIMULATING) return null;
+        if (!Constants.SIMULATING || draw == null) {
+            throw new IllegalStateException(
+                "Must be simulating to use path creater"
+                );
+        }
+        
         Path path = new Path();
 
         Vector point = draw.clicked();

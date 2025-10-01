@@ -5,16 +5,16 @@
 It was designed to address inefficiencies in Road Runner and generate more optimal paths.  
 
 **Key Features:**
-- Supports Bézier curves for the autonomous period.  
+- Supports cubic Bézier curves for the autonomous period.  
 - Uses Hermite splines to dynamically generate paths for Tele-Op.  
 - Provides flexible motor control: pass in lambda functions for direct control, or simply retrieve the target state.  
-- Supports lambda functions for orientation specification, with optional constant constraints.  
+- Supports lambda functions for orientation specification, while constraining to constants.  
 - Uses a physics model for more accurate pathing than other algorithms like Road Runner.  
 
 ---
 
 ## Setup
-SKIDADDLE is entirely library-based. To get started, clone this repository into your project, and import the library and use the provided methods.  
+SKIDADDLE is entirely library-based. To get started, clone this repository into your project, and import the library and use the provided methods. Then you will have to tune the inch per tick and PID values for SKIDADDLE to work properly.
 
 You can use SKIDADDLE in two ways:
 1. **Direct control:** Retrieve the linear/angular position, velocity, and acceleration, then feed them into your own PID system.  
@@ -22,7 +22,7 @@ You can use SKIDADDLE in two ways:
 
 ### Example: Lambda Function for FTC
 ```java
-Controller.MotorController lambda = (WheelSpeed s) -> {
+Controller.MotorController motorLambda = (WheelSpeed s) -> {
     double v = voltageSensor.getVoltage(); //This normalizes to the motor voltage.
     
     your_front_left_motor.setPower(s.vels[s.FL]  / v);
@@ -34,12 +34,14 @@ Controller.MotorController lambda = (WheelSpeed s) -> {
 
 ## Usage Examples
 ### Autonomous with Bézier Curves  
-This is how you would write a Bezier based routine for Auton.  
+This is how to write a Bézier-based routine for the Autonomous period.
 
 ```java
-  Controller driveTo = new Controller(null, lambda); // instantiate pathing object. If not using the motor lambda, set it to null
+  Controller driveTo = new Controller(null, motorLambda); // instantiate pathing object. If not using the motor lambda, set it to null
   Angular.Controller angController = your_angular_lambda; // e.g., Angular.turnToAngle(rad)
   Path path = new Path(new Path.Bezier(control_points)); // vector array of four control points (length must be 4)
+
+  MotionState pose = new MotionState(your_initial_linear_PoseVelAcc, your_initial_angular_PoseVelAcc); //Initialize pose to the starting position, velocity and acceleration of the robot.
   
   while (pose.moving) { 
     MotionState sensorState = new MotionState(
@@ -56,7 +58,7 @@ This is how you would write a Bezier based routine for Auton.
 ```
 
 ### Tele-Op with Hermite Splines
-This is how you would write a Hermite based routine for Tele-op.  
+This is how to write a Hermite-based routine for Tele-Op.  
 
 ```java
   Controller driveTo = new Controller(null, lambda);
@@ -65,7 +67,9 @@ This is how you would write a Hermite based routine for Tele-op.
   Path path = new Path(new Path.Hermite(
       your_start_point, your_desired_end_point, 
       your_start_velocity, your_desired_exit_velocity
-  )); 
+  ));
+
+  MotionState pose = new MotionState(your_initial_linear_PoseVelAcc, your_initial_angular_PoseVelAcc); //Initialize pose to the starting position, velocity and acceleration of the robot.
   
   while (pose.moving) { 
     MotionState sensorState = new MotionState(
@@ -90,7 +94,7 @@ This is how you would write a Hermite based routine for Tele-op.
 | `Path(Bezier b)` | `b`: a Bézier object | `Path` | Creates a path from a Bézier curve. |
 | `Path(Hermite h)` | `h`: a Hermite spline | `Path` | Converts a Hermite spline into an optimal Bézier curve for pathing. |
 
-**Bezier**  
+**Bézier**  
 | Method | Parameters | Returns | Description |
 |--------|------------|---------|-------------|
 | `Bezier(Vector[] controlPoints)` | `controlPoints`: array of 4 vectors | `Bezier` | Defines a Bézier curve from four control points. |
@@ -154,6 +158,7 @@ The algorithm prioritizes decelerating transverse velocity to zero (to stay alig
 
 ### Segment Transitions
 Next, we extend the logic to handle **transitions between segments**.  
+
 To do this, the algorithm calculates the distance required to decelerate transverse velocity. However, because convergent velocity causes forward progress along the path, the eventual intersection point with the new line shifts during the deceleration. The algorithm accounts for this displacement and executes the transition once the robot reaches the calculated distance.
 
 ---
@@ -162,9 +167,9 @@ To do this, the algorithm calculates the distance required to decelerate transve
 With segment handling defined, the next question is: **how are the line segments generated?**  
 
 - A Hermite spline is created, defined by the robot’s current position/velocity and the desired end position/velocity.  
-- The Hermite spline is then converted into a Bézier curve.  
-- For autonomous use, Béziers can also be used directly. The algorithm estimates the required acceleration for a Bézier curve and scales its curvature if the acceleration limit is exceeded.  
-- Bézier curves are flattened into line segments using **recursive De Casteljau subdivision with adaptive error tolerance**, yielding more precise approximations than uniform linear sampling.  
+- The Hermite spline is then converted into an optimal cubic Bézier curve by scaling the curvature down if the acceleration constant is exceeded.
+- For autonomous use, Béziers can also be used directly. The algorithm estimates the required acceleration for a cubic Bézier curve and scales its curvature if the acceleration limit is exceeded.  
+- Cubic Bézier curves are flattened into line segments using **recursive De Casteljau subdivision with adaptive error tolerance**, yielding more precise approximations than uniform linear sampling.  
 
 ---
 
@@ -179,12 +184,30 @@ This lookahead step is the most computationally intensive part of the algorithm.
 
 ---
 
+### Orientation
+Orientation is controlled via a user-provided lambda function, which receives the current `MotionState` and timestep.  
+This enables features like point tracking. Orientation changes are capped at the robot’s max angular velocity/acceleration, ensuring constraints are never exceeded. Orientation, angular velocity, and angular acceleration are all treated as vectors.
+
+---
+
+### Disassembly
+Converting from field-relative velocity to wheel velocities occurs in four steps:
+
+1. The `PoseVelAcc` is updated using a PIDF controller, which minimizes error and applies the desired velocity/acceleration.  
+2. Updated vectors are converted from field-relative to robot-relative coordinates using the current orientation.  
+3. Linear/angular velocity and acceleration are passed through an inverse kinematics equation, producing per-wheel velocities.
+4. A final feedforward adjustment compensates for motor-control imperfections when setting wheel velocity and acceleration.
+
+Finally, the per-wheel velocities are passed to the user’s lambda, where the user can normalize to motor voltage and apply them.
+
+---
+   
 ### Putting It All Together
 The resulting system ensures that:  
 - The motion profile reaches the maximum safe velocity for the next segment before the transition.  
 - The transition occurs exactly when the remaining distance is less than the required deceleration distance.  
 
-This process combines motion profiling, velocity decomposition, adaptive curve flattening, and predictive lookahead to create smooth, dynamically feasible robot paths in real time.
+By combining motion profiling, velocity decomposition, adaptive curve flattening, predictive lookahead, and PID control, SKIDADDLE produces smooth, dynamically feasible robot paths in real time.
 
 ## License
 This project is licensed under the Apache License 2.0 – see the [LICENSE](LICENSE) file for details.

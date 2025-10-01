@@ -5,7 +5,7 @@
 It was designed to address inefficiencies in Road Runner and generate more optimal paths.  
 
 **Key Features:**
-- Supports Bézier curves for the autonomous period.  
+- Supports cubic Bézier curves for the autonomous period.  
 - Uses Hermite splines to dynamically generate paths for Tele-Op.  
 - Provides flexible motor control: pass in lambda functions for direct control, or simply retrieve the target state.  
 - Supports lambda functions for orientation specification, with optional constant constraints.  
@@ -22,7 +22,7 @@ You can use SKIDADDLE in two ways:
 
 ### Example: Lambda Function for FTC
 ```java
-Controller.MotorController lambda = (WheelSpeed s) -> {
+Controller.MotorController motorLambda = (WheelSpeed s) -> {
     double v = voltageSensor.getVoltage(); //This normalizes to the motor voltage.
     
     your_front_left_motor.setPower(s.vels[s.FL]  / v);
@@ -34,12 +34,14 @@ Controller.MotorController lambda = (WheelSpeed s) -> {
 
 ## Usage Examples
 ### Autonomous with Bézier Curves  
-This is how you would write a Bezier based routine for Auton.  
+This is how you would write a Bézier based routine for Auton.  
 
 ```java
-  Controller driveTo = new Controller(null, lambda); // instantiate pathing object. If not using the motor lambda, set it to null
+  Controller driveTo = new Controller(null, motorLambda); // instantiate pathing object. If not using the motor lambda, set it to null
   Angular.Controller angController = your_angular_lambda; // e.g., Angular.turnToAngle(rad)
   Path path = new Path(new Path.Bezier(control_points)); // vector array of four control points (length must be 4)
+
+  MotionState pose = new MotionState(your_initial_linear_PoseVelAcc, your_initial_angular_PoseVelAcc); //Initialize pose to the starting position, velocity and acceleration of the robot.
   
   while (pose.moving) { 
     MotionState sensorState = new MotionState(
@@ -154,6 +156,7 @@ The algorithm prioritizes decelerating transverse velocity to zero (to stay alig
 
 ### Segment Transitions
 Next, we extend the logic to handle **transitions between segments**.  
+
 To do this, the algorithm calculates the distance required to decelerate transverse velocity. However, because convergent velocity causes forward progress along the path, the eventual intersection point with the new line shifts during the deceleration. The algorithm accounts for this displacement and executes the transition once the robot reaches the calculated distance.
 
 ---
@@ -162,9 +165,9 @@ To do this, the algorithm calculates the distance required to decelerate transve
 With segment handling defined, the next question is: **how are the line segments generated?**  
 
 - A Hermite spline is created, defined by the robot’s current position/velocity and the desired end position/velocity.  
-- The Hermite spline is then converted into a Bézier curve.  
-- For autonomous use, Béziers can also be used directly. The algorithm estimates the required acceleration for a Bézier curve and scales its curvature if the acceleration limit is exceeded.  
-- Bézier curves are flattened into line segments using **recursive De Casteljau subdivision with adaptive error tolerance**, yielding more precise approximations than uniform linear sampling.  
+- The Hermite spline is then converted into a cubic Bézier curve.  
+- For autonomous use, Béziers can also be used directly. The algorithm estimates the required acceleration for a cubic Bézier curve and scales its curvature if the acceleration limit is exceeded.  
+- Cubic Bézier curves are flattened into line segments using **recursive De Casteljau subdivision with adaptive error tolerance**, yielding more precise approximations than uniform linear sampling.  
 
 ---
 

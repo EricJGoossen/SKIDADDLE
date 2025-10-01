@@ -42,22 +42,20 @@ public class Constants {
     public static final int CHART_HEIGHT = 600;
 
     // PID controller gains
-    public static final Dual PID_P = new Dual();
-    public static final Dual PID_I = new Dual();
-    public static final Dual PID_D = new Dual();
-    public static final Dual PID_FV = new Dual();
-    public static final Dual PID_FA = new Dual();
+    public static final Dual PID_P = new Dual(); // TUNE
+    public static final Dual PID_I = new Dual(); // TUNE
+    public static final Dual PID_D = new Dual(); // TUNE
+    public static final Dual PID_FV = new Dual(); // TUNE
+    public static final Dual PID_FA = new Dual(); // TUNE
 
     // Motor feedforward gains
-    public static final double PID_S = 1; // static friction
-    public static final double PID_V = 0; // velocity gain
-    public static final double PID_A = 0; // acceleration gain
+    public static final double PID_S = 1; // TUNE
+    public static final double PID_V = 0; // TUNE
+    public static final double PID_A = 0; // TUNE
 
     // Robot physical constants
-    public static final double INCH_PER_TICK = 1.0;
-    public static final double TRACK_WIDTH_TICKS = 0;
-    public static final double LATERAL_INCH_PER_TICK = 0;
-    public static final double LATERAL_MULTIPLIER = INCH_PER_TICK / LATERAL_INCH_PER_TICK;
+    public static final double TURNING_RADIUS = 0; // TUNE
+    public static final double LATERAL_MULTIPLIER = 1; // TUNE 
 
     // Simulator constants
     public static final double SIM_DELTA_TIME = 0.01;

@@ -77,7 +77,7 @@ public class Kinematics {
      * @return WheelSpeed object representing individual wheel commands
      */
     protected static WheelSpeed inverse(MotionState state) {
-        double R = Constants.INCH_PER_TICK * Constants.TRACK_WIDTH_TICKS; // Effective turning radius
+        double R = Constants.TURNING_RADIUS; // Effective turning radius
         double latMult = Constants.LATERAL_MULTIPLIER;
 
         WheelSpeed w = new WheelSpeed();

@@ -48,6 +48,7 @@ public class Simulator {
      */
     public Simulator(Graph draw) {
         this.draw = draw;
+        this.iterations = 0;
     }
 
     // Core simulation

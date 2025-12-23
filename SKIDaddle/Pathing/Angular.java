@@ -137,5 +137,5 @@ public class Angular {
         draw.addChartData("angle", Math.abs(Math.toDegrees(pose.pos.angle())));
         draw.addChartData("angleVel", pose.vel.hypot());
         draw.addChartData("angleAccel", pose.accel.hypot());
-}
+    }
 }

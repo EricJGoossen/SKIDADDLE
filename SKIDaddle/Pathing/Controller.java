@@ -8,10 +8,13 @@ import Util.Constants;
 import Util.PoseVelAcc;
 import Util.MotionState;
 import Util.Vector;
+import Util.AccelerationCommands.AccelerationCommand;
+import Util.AccelerationCommands.MotorCommand;
 import Util.Path;
 import Util.Twist;
 
 import java.awt.Color;
+import java.util.ArrayList;
 
 /**
  * High-level robot controller combining linear and angular path following.
@@ -120,6 +123,66 @@ public class Controller {
         setDriveVel(new MotionState(updatedState), sensorMotion, deltaT);
 
         return updatedState;
+    }
+
+
+    public static void allocateAcceleration(AccelerationCommand[] commands) {
+        ArrayList<MotorCommand> intents = new ArrayList<>(commands.length);
+
+        for (int i = 0; i < commands.length; i++) {
+            intents.add(commands[i].toMotorCommand());
+        }
+
+        MotorCommand totalMotorDemand = MotorCommand.sum(intents.toArray(new MotorCommand[0]));
+
+        if (Math.abs(totalMotorDemand.max()) > Constants.MAX_MOTOR_ACCELERATION) { 
+            ArrayList<MotorCommand> remainingIntents = new ArrayList<>(intents);
+            double budget = 1.0;
+
+            while (budget > 0.0 && !remainingIntents.isEmpty()) {
+                ArrayList<MotorCommand> saturated = new ArrayList<>();
+
+                double weightSum = MotorCommand.sum(remainingIntents.toArray(new MotorCommand[0])).weight;
+                double evenDelta = weightSum == 0.0 ? budget / remainingIntents.size() : 0.0;
+                double usedBudget = 0.0;
+
+                for (MotorCommand intent : remainingIntents) {
+                    double delta = weightSum == 0.0 ? 
+                        evenDelta : 
+                        (intent.weight / weightSum) * budget;
+
+                    double maxScale = Math.abs(intent.max() / Constants.MAX_MOTOR_ACCELERATION);
+                    double newScale = intent.scale + delta;
+
+                    if (newScale > maxScale) {
+                        delta = maxScale - intent.scale;
+                        intent.scale = maxScale;
+                        usedBudget += delta;
+                        saturated.add(intent);
+                    } else {
+                        intent.scale = newScale;
+                        usedBudget += delta;
+                    }
+                }
+
+                budget -= usedBudget;
+                remainingIntents.removeAll(saturated);
+            }
+        } else {
+            for (MotorCommand intent : intents) {
+                intent.scale = intent.max() / Constants.MAX_MOTOR_ACCELERATION;
+            }
+        }
+
+        for (MotorCommand intent : intents) {
+            double scaledValue = Constants.MAX_MOTOR_ACCELERATION * intent.scale;
+            intent.normalize();
+            intent.times(scaledValue);
+        }
+
+        for (int i = 0; i < commands.length; i++) {
+            commands[i] = commands[i].fromMotorCommand(intents.get(i));
+        }
     }
 
     /**

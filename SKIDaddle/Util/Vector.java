@@ -138,8 +138,8 @@ public class Vector {
      * @param p2 target point
      * @return normalized direction vector
      */
-    public Vector dir(Vector p2) {
-        return p2.minus(this).norm();
+    public Vector dir(Vector v) {
+        return v.minus(this).norm();
     }
 
     /**

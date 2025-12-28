@@ -243,10 +243,12 @@ public class Path {
      * @param i     index to begin drawing from
      * @param graph graph object to draw onto
      */
-    public void draw(int i, Graph graph) {
+    public void draw(int i, Graph graph, Vector v) {
         ArrayList<Vector> subPath = new ArrayList<>(
             Arrays.asList(points).subList(i, points.length)
         );
+
+        subPath.add(0, v);
 
         graph.createPath(
             subPath,

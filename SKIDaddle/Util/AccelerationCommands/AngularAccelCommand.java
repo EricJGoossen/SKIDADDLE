@@ -1,42 +1,35 @@
 package Util.AccelerationCommands;
 
+import Pathing.SpaceKinematics;
 import Util.Constants;
+import Util.MotionState;
 
 public class AngularAccelCommand extends AccelerationCommand{
     public double accel;
-    public double weight;
 
-    public AngularAccelCommand(double accel, double weight) {
+    public AngularAccelCommand(double accel, double weight, int priority) {
+        super(weight, priority);
         this.accel = accel;
-        this.weight = weight;
     }
 
-    public AngularAccelCommand(double weight) {
-        this.weight = weight;
+    @Override
+    public MotorCommand toMotorCommand(double angle) {
+        return SpaceKinematics.inverse(this);
     }
 
-    public MotorCommand toMotorCommand() {
-        double R = Constants.TURNING_RADIUS;
-
-        MotorCommand command = new MotorCommand(weight, 0.0);
-
-        command.speeds[MotorCommand.FL] =  R * accel;
-        command.speeds[MotorCommand.FR] = -R * accel;
-        command.speeds[MotorCommand.BL] =  R * accel;
-        command.speeds[MotorCommand.BR] = -R * accel;
-
-        return command;
+    @Override
+    public AngularAccelCommand fromMotorCommand(MotorCommand command, double angle) {
+        return SpaceKinematics.forwardAngular(command);
     }
 
-    public AngularAccelCommand fromMotorCommand(MotorCommand command) {
-        double R = Constants.TURNING_RADIUS;
+    @Override
+    public boolean isZero() {
+        return Math.abs(accel) < Constants.ZERO_TOLERANCE;
+    }
 
-        double accel = (command.speeds[MotorCommand.FL] - 
-                        command.speeds[MotorCommand.FR] + 
-                        command.speeds[MotorCommand.BL] - 
-                        command.speeds[MotorCommand.BR]) / (4 * R);
-
-        return new AngularAccelCommand(accel, command.weight);
+    @Override
+    public void update(MotionState state) {
+        state.accel.ang = state.accel.ang + accel;
     }
 
     @Override

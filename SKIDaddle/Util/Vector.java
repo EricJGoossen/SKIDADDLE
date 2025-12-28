@@ -160,6 +160,13 @@ public class Vector {
         return new Vector(y, -x);
     }
 
+    public Vector rotate(double n) {
+        double x =  Math.cos(n) * this.x + Math.sin(n) * this.y;
+        double y = -Math.sin(n) * this.x + Math.cos(n) * this.y;
+
+        return new Vector(x, y);
+    }
+
     // Projection helpers
 
     /**

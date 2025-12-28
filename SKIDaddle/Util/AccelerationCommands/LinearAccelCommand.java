@@ -1,51 +1,36 @@
 package Util.AccelerationCommands;
 
+import Pathing.SpaceKinematics;
 import Util.Constants;
+import Util.MotionState;
 import Util.Vector;
 
 public class LinearAccelCommand extends AccelerationCommand {
     public Vector accel;
-    public double weight;
 
-    public LinearAccelCommand(Vector accel, double weight) {
+    public LinearAccelCommand(Vector accel, double weight, int priority) {
+        super(weight, priority);
         this.accel = accel;
-        this.weight = weight;
-    }
-
-    public LinearAccelCommand(double weight) {
-        this.weight = weight;
     }
 
     @Override
-    public MotorCommand toMotorCommand() {
-        double latMult = Constants.LATERAL_MULTIPLIER;
-
-        MotorCommand command = new MotorCommand(weight, 0.0);
-
-        command.speeds[MotorCommand.FL] = accel.y + accel.x * latMult;
-        command.speeds[MotorCommand.FR] = accel.y - accel.x * latMult;
-        command.speeds[MotorCommand.BL] = accel.y - accel.x * latMult;
-        command.speeds[MotorCommand.BR] = accel.y + accel.x * latMult;
-
-        return command;
+    public MotorCommand toMotorCommand(double angle) {
+        return SpaceKinematics.inverse(this, angle);
     }
 
     @Override
-    public LinearAccelCommand fromMotorCommand(MotorCommand command) {
-        double latMult = Constants.LATERAL_MULTIPLIER;
-        
-        Vector newAccel = new Vector(
-            (command.speeds[MotorCommand.FL] - 
-            command.speeds[MotorCommand.FR] -
-            command.speeds[MotorCommand.BL] + 
-            command.speeds[MotorCommand.BR]) / (4 * latMult),
-            (command.speeds[MotorCommand.FL] + 
-            command.speeds[MotorCommand.FR] + 
-            command.speeds[MotorCommand.BL] +
-            command.speeds[MotorCommand.BR]) / 4
-        );
+    public LinearAccelCommand fromMotorCommand(MotorCommand command, double angle) {
+        return SpaceKinematics.forwardLinear(command, angle);
+    }
 
-        return new LinearAccelCommand(newAccel, command.weight);
+    @Override
+    public boolean isZero() {
+        return accel.hypot() < Constants.ZERO_TOLERANCE;
+    }
+
+    @Override
+    public void update(MotionState currentState) {
+       currentState.accel.lin = currentState.accel.lin.plus(accel);
     }
 
     @Override

@@ -6,21 +6,72 @@ public class MotorCommand {
     public static final int BL = 2;
     public static final int BR = 3;
 
-    public double[] speeds = new double[4];
+    public final double[] speeds;
     public final double weight;
-    public double scale = 0.0f;
+    public final int priority;
 
-    public MotorCommand(double weight, double scale) {
-        this.weight = weight;
-    }
+    // allocator metadata
+    public double scale;
+    public boolean saturated;
 
-    public MotorCommand(double weight, double scale, double[] speeds) {
+    public MotorCommand(
+            double weight,
+            int priority,
+            double[] speeds,
+            double scale,
+            boolean saturated
+    ) {
         this.weight = weight;
+        this.priority = priority;
         this.speeds = speeds;
+        this.scale = scale;
+        this.saturated = saturated;
     }
 
-    public double total() {
-        return speeds[FL] + speeds[FR] + speeds[BL] + speeds[BR];
+    public MotorCommand(
+        double weight,
+        int priority,
+        double[] speeds
+    ) {
+        this(weight, priority, speeds, 0.0, false);
+    }
+
+    public MotorCommand(double weight, int priority) {
+        this(weight, priority, new double[4], 0.0, false);
+    }
+
+    public double speed(int i) {
+        if (i < 0 || i >= speeds.length) {
+            throw new IndexOutOfBoundsException(
+                "Motor index " + i + " is out of bounds."
+            );
+        }
+
+        return speeds[i];
+    }
+
+    public double Longitudinal() {
+        return ((speeds[FL]
+               + speeds[FR]
+               + speeds[BL]
+               + speeds[BR]) / 4
+        );
+    }
+
+    public double Lateral(double LAT) {
+        return ((speeds[FL]
+               - speeds[FR]
+               - speeds[BL]
+               + speeds[BR]) / (4 * LAT)
+        );
+    }
+
+    public double Angular(double ROT) {
+        return ((speeds[FL]
+               - speeds[FR]
+               + speeds[BL]
+               - speeds[BR]) / (4 * ROT)
+        );
     }
 
     public int motorCount() {
@@ -37,32 +88,45 @@ public class MotorCommand {
         return max;
     }
 
-    public void normalize() {
+    public MotorCommand normalize() {
+        double result[] = speeds.clone();
+
         double max = Math.abs(max());
         if (max > 1) {
             for (int i = 0; i < speeds.length; i++) {
-                speeds[i] /= max;
+                result[i] /= max;
             }
         }
+
+        return new MotorCommand(
+            weight, priority, result, scale, saturated
+        );
     }
 
-    public void times(double value) {
-        for (int i = 0; i < speeds.length; i++) {
-            speeds[i] *= value;
+    public MotorCommand plus(MotorCommand m) {
+        double result[] = speeds.clone();
+        for (int i = 0; i < result.length; i++) {
+            result[i] += m.speeds[i];
         }
+
+        return new MotorCommand(
+            weight, priority, result, scale, saturated
+        );
     }
 
-    public static MotorCommand sum(MotorCommand[] commands) {
-        double[] sumSpeeds = new double[4];
-        double sumWeight = 0;
+    public MotorCommand times(double value) {
+        double result[] = speeds.clone();
 
-        for (MotorCommand command : commands) {
-            for (int i = 0; i < 4; i++) {
-                sumSpeeds[i] += command.speeds[i];
-            }
-            sumWeight += command.weight;
+        for (int i = 0; i < result.length; i++) {
+            result[i] *= value;
         }
 
-        return new MotorCommand(sumWeight, 0, sumSpeeds);
+        return new MotorCommand(
+            weight, priority, result, scale, saturated
+        );
+    }
+
+    public static MotorCommand zero() {
+        return new MotorCommand(0.0, 0);
     }
 }

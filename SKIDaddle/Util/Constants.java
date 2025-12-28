@@ -12,10 +12,12 @@ public class Constants {
     public static final boolean SIMULATING = true;    // toggle for simulator mode
 
     // Linear motion constraints
-    public static final double MAX_MOTOR_ACCELERATION = 90.0;
+    public static final double MAX_MOTOR_ACCELERATION = 50.0;
+    public static final double MAX_MOTOR_SPEED = 50.0;
     public static final double MAX_ACCELERATION = 50.0; // in/s^2
     public static final double MAX_SPEED = 50.0;        // in/s
     public static final double DISTANCE_EPSILON = 5.0;  // acceptable positional error (in)
+    public static final double VEL_EPSILON = 0.01;
 
     // Angular motion constraints
     public static final double MAX_ANGULAR_ACCELERATION = Math.PI; // rad/s^2
@@ -24,7 +26,7 @@ public class Constants {
 
     // Path generation
     public static final double LINE_APPROX_EPSILON = 0.01; // threshold when a curve is approximated as a line
-    public static final double LOOK_AHEAD_FACTOR = 1.5;   // scale factor for look-ahead distance
+    public static final double LOOK_AHEAD_FACTOR = 10;   // scale factor for look-ahead distance
     public static final MotionState INIT_STATE = new MotionState(); // default starting state
 
     // Path drawing

@@ -6,6 +6,7 @@ import Simulator.Draw.Graph;
 import Util.Constants;
 import Util.MotionState;
 import Util.Twist;
+import Util.AccelerationCommands.MotorCommand;
 
 /**
  * Simulator for robot motion.
@@ -41,16 +42,6 @@ public class Simulator {
         this.iterations = 0;
     }
 
-    /**
-     * Constructs a simulator without an initial pose.
-     *
-     * @param draw visualization graph
-     */
-    public Simulator(Graph draw) {
-        this.draw = draw;
-        this.iterations = 0;
-    }
-
     // Core simulation
 
     /**
@@ -73,6 +64,8 @@ public class Simulator {
      */
     public void update(MotionState pose, double deltaT) {
         pose = new MotionState(pose); // Copy to avoid mutating external state
+        MotorCommand motorVel = pose.vel.toMotorCommand(pose.pos.ang);
+        MotorCommand motorAcc = pose.accel.toMotorCommand(pose.pos.ang);
         iterations++;
 
         Twist velError = pose.pos.minus(lastPose.pos).minus(pose.vel.times(deltaT));
@@ -84,7 +77,7 @@ public class Simulator {
                 throw new IllegalStateException(
                         "Linear position delta does not match velocity. i: " + iterations);
             }
-            if (velError.ang.hypot() > acceptableError) {
+            if (velError.ang > acceptableError) {
                 throw new IllegalStateException(
                         "Angular position delta does not match angular velocity. i: " + iterations);
             }
@@ -92,25 +85,19 @@ public class Simulator {
                 throw new IllegalStateException(
                         "Linear velocity delta does not match acceleration. i: " + iterations);
             }
-            if (accelError.ang.hypot() > acceptableError) {
+            if (accelError.ang > acceptableError) {
                 throw new IllegalStateException(
                         "Angular velocity delta does not match angular acceleration. i: " + iterations);
             }
 
             // --- Speed limits ---
-            if (pose.vel.lin.hypot() > Constants.MAX_SPEED + acceptableError) {
+            if (Math.abs(motorVel.max()) > Constants.MAX_MOTOR_SPEED + acceptableError) {
                 throw new IllegalStateException("Linear velocity exceeds max. i: " + iterations);
-            }
-            if (pose.vel.ang.hypot() > Constants.MAX_ANGULAR_VELOCITY + acceptableError) {
-                throw new IllegalStateException("Angular velocity exceeds max. i: " + iterations);
             }
 
             // --- Acceleration limits ---
-            if (pose.accel.lin.hypot() > Constants.MAX_ACCELERATION + acceptableError) {
+            if (Math.abs(motorAcc.max()) > Constants.MAX_MOTOR_ACCELERATION + acceptableError) {
                 throw new IllegalStateException("Linear acceleration exceeds max. i: " + iterations);
-            }
-            if (pose.accel.ang.hypot() > Constants.MAX_ANGULAR_ACCELERATION + acceptableError) {
-                throw new IllegalStateException("Angular acceleration exceeds max. i: " + iterations);
             }
         } catch (IllegalStateException e) {
             e.printStackTrace();
@@ -126,7 +113,7 @@ public class Simulator {
 
         // Draw robot if in simulation mode
         if (Constants.SIMULATING) {
-            draw.moveRobot(pose.pos.lin.x, pose.pos.lin.y, pose.pos.ang.angle());
+            draw.moveRobot(pose.pos.lin.x, pose.pos.lin.y, pose.pos.ang);
         }
     }
 

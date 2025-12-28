@@ -19,19 +19,6 @@ public class MotionState {
     public boolean moving;
 
     /**
-     * Constructs a motion state from separate linear and angular pose states.
-     *
-     * @param linear  linear pose, velocity, and acceleration
-     * @param angular angular pose, velocity, and acceleration
-     */
-    public MotionState(PoseVelAcc linear, PoseVelAcc angular) {
-        this.pos = new Twist(linear.pos, angular.pos);
-        this.vel = new Twist(linear.vel, angular.vel);
-        this.accel = new Twist(linear.accel, angular.accel);
-        this.moving = linear.moving || angular.moving;
-    }
-
-    /**
      * Constructs a motion state directly from twist components.
      *
      * @param pos   position twist
@@ -74,14 +61,5 @@ public class MotionState {
      */
     public PoseVelAcc linear() {
         return new PoseVelAcc(pos.lin, vel.lin, accel.lin);
-    }
-
-    /**
-     * Extracts the angular portion of this motion state as a {@link PoseVelAcc}.
-     *
-     * @return angular pose, velocity, and acceleration
-     */
-    public PoseVelAcc angular() {
-        return new PoseVelAcc(pos.ang, vel.ang, accel.ang);
     }
 }

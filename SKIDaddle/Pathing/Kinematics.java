@@ -1,5 +1,6 @@
 package Pathing;
 
+import Util.Angle;
 import Util.Constants;
 import Util.PathSegment;
 import Util.Vector;
@@ -40,12 +41,23 @@ public class Kinematics {
         return Constants.MAX_MOTOR_ACCELERATION / (Math.abs(dir.x) + Math.abs(dir.y));
     }
 
-    public static double speedProfile(double exitSpeed, double dist, Vector dir) {
+    public static double linearSpeedProfile(double exitSpeed, double dist, Vector dir) {
         dist = Math.abs(dist);
 
         double speed = Constants.MAX_MOTOR_SPEED;
 
         speed = Math.min(speed, Math.sqrt(exitSpeed * exitSpeed + 2.0 * findAccel(dir) * dist));
+
+        return speed;
+    }
+
+    public static double angularSpeedProfile(double exitSpeed, Angle angle) {
+        double dist = Math.abs(angle.get());
+        double R = Constants.TURNING_RADIUS;
+
+        double speed = Constants.MAX_MOTOR_SPEED / R;
+
+        speed = Math.min(speed, Math.sqrt(exitSpeed * exitSpeed + 2.0 * Constants.MAX_MOTOR_ACCELERATION / R * dist));
 
         return speed;
     }

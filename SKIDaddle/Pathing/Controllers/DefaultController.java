@@ -1,6 +1,5 @@
 package Pathing.Controllers;
 
-import Pathing.Scheduler;
 import Pathing.Scheduler.AccelerationController;
 import Util.MotionState;
 import Util.PathSegment;
@@ -26,7 +25,7 @@ public class DefaultController implements AccelerationController{
 
     public AccelerationCommand[] stop(MotionState state, PathSegment segment, double deltaT) {
         LinearAccelCommand linearCommand = new LinearAccelCommand(state.vel.lin.div(-deltaT), weight, priority);
-        AngularAccelCommand angularCommand = new AngularAccelCommand(-state.vel.ang, weight, priority);
+        AngularAccelCommand angularCommand = new AngularAccelCommand(-state.vel.ang / deltaT, weight, priority);
 
         AccelerationCommand[] commands = {linearCommand, angularCommand};
 

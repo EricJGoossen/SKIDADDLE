@@ -36,7 +36,7 @@ public class LinearController implements Scheduler.AccelerationController{
         double remainingDist = Math.max(0, dist - segment.transitionDistance);
         Vector dir = segment.last.dir(segment.current);
 
-        double targetSpeed = Kinematics.speedProfile(segment.maxVel.hypot(), remainingDist, segment.lastSegDir);
+        double targetSpeed = Kinematics.linearSpeedProfile(segment.maxVel.hypot(), remainingDist, segment.lastSegDir);
         LinearAccelCommand[] commands = new LinearAccelCommand[2];
 
         Vector convVel = state.vel.lin.convergent(dir);

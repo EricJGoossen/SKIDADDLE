@@ -2,67 +2,63 @@ package Pathing.Controllers;
 
 import Pathing.Kinematics;
 import Pathing.Scheduler;
-import Pathing.Scheduler.AccelerationController;
+import Util.Angle;
 import Util.MotionState;
 import Util.PathSegment;
 import Util.AccelerationCommands.AngularAccelCommand;
 
 public class AngularController implements Scheduler.AccelerationController{
     public interface TargetGenerator {
-        double getAngle(MotionState state, PathSegment segment, double deltaT);
+        Angle getAngle(MotionState state, PathSegment segment, double deltaT);
     }
 
     private TargetGenerator generator;
 
-    private final double VEL_EPSILON = Math.toRadians(5.0);
+    private final double VEL_EPSILON = 0.3;
     private final double POS_EPSILON = Math.toRadians(5.0);
 
     private final double weight;
     private final int priority;
 
+    private Angle lastTarget;
+    private double lastSpeed;
+
     public AngularController(TargetGenerator generator, double weight, int priority) {
         this.generator = generator;
+
         this.weight = weight;
         this.priority = priority;
+
+        lastTarget = new Angle();
+        lastSpeed = Double.POSITIVE_INFINITY;
     }
 
     public void init() {}
 
-    public double wrap(double n) {
-        while (n >  Math.PI) n -= 2 * Math.PI;
-        while (n < -Math.PI) n += 2 * Math.PI;
-        return n;
-    }
-
     public AngularAccelCommand[] update(MotionState state, PathSegment segment, double deltaT) {
-        double target = generator.getAngle(state, segment, deltaT);
-        target = wrap(target);
+        Angle target = generator.getAngle(state, segment, deltaT);
 
-        double deltaTheta = wrap(target - state.pos.ang);
+        Angle deltaTheta = target.minus(state.pos.ang);
 
-        double speed = Kinematics.speedProfile(0, deltaTheta);
-        speed *= Math.signum(deltaTheta);
+        double speed = Kinematics.angularSpeedProfile(0, deltaTheta);
+        speed *= Math.signum(deltaTheta.get());
 
         double accel = (speed - state.vel.ang) / deltaT;
 
         AngularAccelCommand[] command = {new AngularAccelCommand(accel, weight, priority)};
 
+        lastTarget = target;
+        lastSpeed = speed;
+
         return command;
     }
 
     public boolean running(MotionState state, PathSegment segment, double deltaT) {
-        double target = generator.getAngle(state, segment, deltaT);
-        target = wrap(target);
-
-        double deltaTheta = wrap(target - state.pos.ang);
-
-        double speed = Kinematics.speedProfile(0, deltaTheta);
-        speed *= Math.signum(deltaTheta);
-
-        return Math.abs(target - state.pos.ang) < POS_EPSILON && Math.abs(speed) < VEL_EPSILON;
+        return lastTarget.minus(state.pos.ang).abs() > POS_EPSILON ||
+               Math.abs(lastSpeed) > VEL_EPSILON;
     }
 
     public boolean interrupt() {return true;}
     
-    public boolean terminate() {return false;}
+    public boolean terminate() {return true;}
 }

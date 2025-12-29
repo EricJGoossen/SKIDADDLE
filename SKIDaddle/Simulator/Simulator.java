@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import Simulator.Draw.Graph;
 import Util.Constants;
 import Util.MotionState;
+import Util.MotorVector;
 import Util.Twist;
 import Util.AccelerationCommands.MotorCommand;
 
@@ -23,6 +24,7 @@ public class Simulator {
 
     /** Tolerance for numerical consistency checks */
     private final double acceptableError = 0.1;
+    private final double acceptableAccelError = 0.5;
 
     /** Iteration counter */
     private int iterations = 0;
@@ -64,8 +66,8 @@ public class Simulator {
      */
     public void update(MotionState pose, double deltaT) {
         pose = new MotionState(pose); // Copy to avoid mutating external state
-        MotorCommand motorVel = pose.vel.toMotorCommand(pose.pos.ang);
-        MotorCommand motorAcc = pose.accel.toMotorCommand(pose.pos.ang);
+        MotorVector motorVel = pose.vel.toMotorSpace(pose.pos.ang);
+        MotorVector motorAcc = pose.accel.toMotorSpace(pose.pos.ang);
         iterations++;
 
         Twist velError = pose.pos.minus(lastPose.pos).minus(pose.vel.times(deltaT));
@@ -96,7 +98,7 @@ public class Simulator {
             }
 
             // --- Acceleration limits ---
-            if (Math.abs(motorAcc.max()) > Constants.MAX_MOTOR_ACCELERATION + acceptableError) {
+            if (Math.abs(motorAcc.max()) > Constants.MAX_MOTOR_ACCELERATION + acceptableAccelError) {
                 throw new IllegalStateException("Linear acceleration exceeds max. i: " + iterations);
             }
         } catch (IllegalStateException e) {

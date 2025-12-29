@@ -1,6 +1,7 @@
 package Pathing;
 
 import Util.Constants;
+import Util.MotorVector;
 import Util.Twist;
 import Util.Vector;
 import Util.AccelerationCommands.AngularAccelCommand;
@@ -27,7 +28,7 @@ public final class SpaceKinematics {
     }
 
     public static LinearAccelCommand forwardLinear(MotorCommand mc, double angle) {
-        Vector acc = new Vector(mc.Lateral(LAT), mc.Longitudinal());
+        Vector acc = new Vector(mc.vector.Lateral(LAT), mc.vector.Longitudinal());
 
         return new LinearAccelCommand(acc.rotate(-angle), 
             mc.weight, 
@@ -51,14 +52,14 @@ public final class SpaceKinematics {
     }
 
     public static AngularAccelCommand forwardAngular(MotorCommand mc) {
-        double acc = mc.Angular(ROT);
+        double acc = mc.vector.Angular(ROT);
 
         return new AngularAccelCommand(acc, mc.weight, mc.priority);
     }
 
-    // Combined
+    // Twist
 
-    public static MotorCommand inverse(Twist t, double angle) {
+    public static MotorVector inverse(Twist t, double angle) {
         Vector acc = t.lin.rotate(angle);
         double w = t.ang * ROT;
 
@@ -69,13 +70,13 @@ public final class SpaceKinematics {
             acc.y + acc.x * LAT - w
         };
 
-        return new MotorCommand(0.0, 0, speeds);
+        return new MotorVector(speeds);
     }
 
-    public static Twist forwardCombined(MotorCommand mc, double angle) {
-        Vector acc = new Vector(mc.Lateral(LAT), mc.Longitudinal());
+    public static Twist forwardTwist(MotorVector v, double angle) {
+        Vector acc = new Vector(v.Lateral(LAT), v.Longitudinal());
         
-        double angAcc = mc.Angular(ROT);
+        double angAcc = v.Angular(ROT);
 
         return new Twist(acc.rotate(-angle), angAcc);
     }

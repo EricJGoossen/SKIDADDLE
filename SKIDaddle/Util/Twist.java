@@ -1,7 +1,6 @@
 package Util;
 
 import Pathing.SpaceKinematics;
-import Util.AccelerationCommands.MotorCommand;
 
 /**
  * Represents a 2D twist consisting of linear and angular components.
@@ -115,7 +114,7 @@ public class Twist {
         return lin.hypot() + ang;
     } 
 
-    public MotorCommand toMotorCommand(double angle) {
+    public MotorVector toMotorSpace(double angle) {
         return SpaceKinematics.inverse(this, angle);
     }
 }

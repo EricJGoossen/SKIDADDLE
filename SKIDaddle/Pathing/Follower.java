@@ -4,7 +4,6 @@ import Util.Path;
 import Util.PathSegment;
 import Util.Twist;
 import Util.AccelerationCommands.AccelerationCommand;
-import Util.AccelerationCommands.MotorCommand;
 import Simulator.Simulator;
 import Simulator.Draw.Graph;
 import Util.Constants;
@@ -22,6 +21,7 @@ public class Follower {
 
     MotionState state;
     PathSegment segment;
+    int index = 0;
 
     Path lastPath;
 
@@ -41,6 +41,7 @@ public class Follower {
     }
     
     public boolean update(MotionState sensorState, Path path, double deltaT) {
+        index++;
         if (lastPath != path) {
             segment.set(path, 1);
             segment.maxVel = lookAhead.compute(path.points(), segment.idx, state.vel.lin.hypot());
@@ -57,10 +58,10 @@ public class Follower {
             return true;
         }
 
-        allocateAcceleration(commands, deltaT);
+        Twist accel = Allocator.acceleration(commands, state.vel, state.pos.ang, deltaT);
 
         //State integration
-        updateState(commands, deltaT);
+        updateState(accel, deltaT);
 
         if (segment.idx < path.points().length - 1) {
             segmentTracker(path);
@@ -74,103 +75,9 @@ public class Follower {
         return false;
     }
 
-    public void allocateAcceleration(AccelerationCommand[] commands, double deltaT) {
-        final double angle = state.pos.ang;
-        final double maxAccel = Constants.MAX_MOTOR_ACCELERATION;
-
-        MotorCommand vel = state.vel.toMotorCommand(angle);
-        double velMag = vel.max();
-        double outWardAccel = (Constants.MAX_MOTOR_SPEED - Math.abs(vel.max())) / deltaT;
-
-        MotorCommand[] intents = new MotorCommand[commands.length];
-        for (int i = 0; i < commands.length; i++) {
-            intents[i] = commands[i].toMotorCommand(angle);
-        }
-
-        int numActive = intents.length;
-        double budget = 1.0;
-
-        while (budget > 0.0 && numActive > 0) {
-            int priority = 0;
-            double weightSum = 0.0;
-
-            for (int i = 0; i < numActive; i++) {
-                MotorCommand intent = intents[i];
-
-                if (intent.priority > priority) {
-                    priority = intent.priority;
-                    weightSum = intent.weight;
-                } else if (intent.priority == priority) {
-                    weightSum += intent.weight;
-                }
-            }
-
-            if (weightSum == 0.0) break;
-
-            double usedBudget = 0.0;
-
-            for (int i = 0; i < numActive; i++) {
-                MotorCommand intent = intents[i];
-                if (intent.priority < priority) continue;
-
-                double delta = intent.weight * budget / weightSum;
-
-                double targetAccel = intent.max();
-                if (targetAccel * velMag > 0) targetAccel = Math.min(outWardAccel, maxAccel);
-                double scaleLimit = Math.abs(targetAccel) / maxAccel;
-                
-                double newScale = intent.scale + delta;
-
-                if (newScale >= scaleLimit) {
-                    delta = scaleLimit - intent.scale;
-                    intent.scale = scaleLimit;
-                    intent.saturated = true;
-                } else {
-                    intent.scale = newScale;
-                }
-
-                usedBudget += delta;
-            }
-
-            budget -= usedBudget;
-
-            for (int i = 0; i < numActive;) {
-                if (intents[i].saturated) {
-                    intents[i] = intents[numActive - 1];
-                    numActive--;
-                } else {
-                    i++;
-                }
-            }
-        }
-
-        MotorCommand[] scaled = new MotorCommand[commands.length];
-        for (int i = 0; i < intents.length; i++) {
-            MotorCommand intent = intents[i];
-
-            if (intent.scale == 0.0) {
-                scaled[i] = MotorCommand.zero();
-            } else {
-                scaled[i] = intent.normalize().times(maxAccel * intent.scale);
-            }
-        }
-
-        for (int i = 0; i < commands.length; i++) {
-            commands[i] = commands[i].fromMotorCommand(scaled[i], angle);
-        }
-    }
-
-
-    public void updateState(AccelerationCommand[] commands, double deltaT) {
-        state.accel = new Twist();
-
-        for (AccelerationCommand command : commands) {
-            command.update(state);
-        }
-
+    public void updateState(Twist accel, double deltaT) {
+        state.accel = accel;
         state.vel = state.vel.plus(state.accel.times(deltaT));
-        if (Math.abs(state.vel.sum()) < Constants.VEL_EPSILON) state.vel = new Twist();
-
         state.pos = state.pos.plus(state.vel.times(deltaT));
     }
 
@@ -200,13 +107,9 @@ public class Follower {
         path.draw(segment.idx, draw, state.pos.lin);
         draw.addPathData("Path traveled", state.pos.lin);
 
-        draw.addChartData("vel", Math.abs(state.vel.lin.x) + Math.abs(state.vel.lin.y));
-        draw.addChartData("accel", Math.abs(state.accel.lin.x) + Math.abs(state.accel.lin.y));
+        draw.addChartData("vel", Math.abs(state.vel.toMotorSpace(state.pos.ang).max()));
+        draw.addChartData("accel", Math.abs(state.accel.toMotorSpace(state.pos.ang).max()));
         draw.addChartData("max", segment.maxVel.hypot());
-        draw.addChartData("line", segment.idx);
-
-        draw.addChartData("angleVel", state.vel.ang);
-        draw.addChartData("angleAccel", state.accel.ang);
     }
 
     /**
@@ -221,10 +124,7 @@ public class Follower {
         draw.createChart("vel", 1, Color.BLUE, 3);
         draw.createChart("accel", 1, Color.RED, 3);
         draw.createChart("max", 1, Color.GREEN, 3);
-        draw.createChart("line", 1, Color.MAGENTA, 3);
 
         draw.createChart("angle", 1, Color.YELLOW, 3);
-        draw.createChart("angleVel", 1, Color.BLUE, 3);
-        draw.createChart("angleAccel", 1, Color.RED, 3);
     }
 }

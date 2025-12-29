@@ -18,6 +18,7 @@ public class Constants {
     public static final double MAX_SPEED = 50.0;        // in/s
     public static final double DISTANCE_EPSILON = 5.0;  // acceptable positional error (in)
     public static final double VEL_EPSILON = 0.01;
+    public static final double ACCEL_EPSILON = VEL_EPSILON / 0.01;
 
     // Angular motion constraints
     public static final double MAX_ANGULAR_ACCELERATION = Math.PI; // rad/s^2
@@ -57,7 +58,7 @@ public class Constants {
     public static final double PID_A = 0; // TUNE
 
     // Robot physical constants
-    public static final double TURNING_RADIUS = 1; // TUNE
+    public static final double TURNING_RADIUS = 10; // TUNE
     public static final double LATERAL_MULTIPLIER = 1; // TUNE 
 
     // Simulator constants

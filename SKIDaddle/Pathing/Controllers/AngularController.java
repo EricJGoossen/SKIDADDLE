@@ -4,12 +4,12 @@ import Pathing.Kinematics;
 import Pathing.Scheduler;
 import Util.Angle;
 import Util.MotionState;
-import Util.PathSegment;
 import Util.AccelerationCommands.AngularAccelCommand;
+import Util.Path.Arc;
 
 public class AngularController implements Scheduler.AccelerationController{
     public interface TargetGenerator {
-        Angle getAngle(MotionState state, PathSegment segment, double deltaT);
+        Angle getAngle(MotionState state, Arc arc, double deltaT);
     }
 
     private TargetGenerator generator;
@@ -35,8 +35,8 @@ public class AngularController implements Scheduler.AccelerationController{
 
     public void init() {}
 
-    public AngularAccelCommand[] update(MotionState state, PathSegment segment, double deltaT) {
-        Angle target = generator.getAngle(state, segment, deltaT);
+    public AngularAccelCommand[] update(MotionState state, Arc arc, double deltaT) {
+        Angle target = generator.getAngle(state, arc, deltaT);
 
         Angle deltaTheta = target.minus(state.pos.ang);
 
@@ -53,7 +53,7 @@ public class AngularController implements Scheduler.AccelerationController{
         return command;
     }
 
-    public boolean running(MotionState state, PathSegment segment, double deltaT) {
+    public boolean running(MotionState state, Arc arc, double deltaT) {
         return lastTarget.minus(state.pos.ang).abs() > POS_EPSILON ||
                Math.abs(lastSpeed) > VEL_EPSILON;
     }

@@ -3,9 +3,9 @@ package Pathing.Controllers;
 import Pathing.Kinematics;
 import Pathing.Scheduler;
 import Util.MotionState;
-import Util.PathSegment;
 import Util.Vector;
 import Util.AccelerationCommands.LinearAccelCommand;
+import Util.Path.Arc;
 
 public class LinearController implements Scheduler.AccelerationController{
     private final double VEL_EPSILON = 0.1;
@@ -31,12 +31,12 @@ public class LinearController implements Scheduler.AccelerationController{
 
     public void init() {}
 
-    public LinearAccelCommand[] update(MotionState state, PathSegment segment, double deltaT) {
-        double dist = segment.distAlongSegment(state.pos.lin);
-        double remainingDist = Math.max(0, dist - segment.transitionDistance);
-        Vector dir = segment.last.dir(segment.current);
+    public LinearAccelCommand[] update(MotionState state, Arc arc, double deltaT) {
+        double dist = arc.distAlongSegment(state.pos.lin);
+        double remainingDist = Math.max(0, dist - arc.transition);
+        Vector dir = arc.current.dir;
 
-        double targetSpeed = Kinematics.linearSpeedProfile(segment.maxVel.hypot(), remainingDist, segment.lastSegDir);
+        double targetSpeed = Kinematics.linearSpeedProfile(arc.vel.hypot(), remainingDist, dir);
         LinearAccelCommand[] commands = new LinearAccelCommand[2];
 
         Vector convVel = state.vel.lin.convergent(dir);
@@ -51,9 +51,10 @@ public class LinearController implements Scheduler.AccelerationController{
         return commands;
     }
 
-    public boolean running(MotionState state, PathSegment segment, double deltaT) {
-        return state.pos.lin.minus(segment.next).hypot() > POS_EPSILON || 
-               Math.abs(lastTarget) > VEL_EPSILON;
+    public boolean running(MotionState state, Arc arc, double deltaT) {
+        /*return state.pos.lin.minus(arc.point.plus(arc.next.dist())).hypot() > POS_EPSILON || 
+               Math.abs(lastTarget) > VEL_EPSILON;*/
+        return true;
     }
 
     public boolean interrupt() {return true;}

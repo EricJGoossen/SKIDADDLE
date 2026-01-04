@@ -1,11 +1,11 @@
 package Simulator;
 
 import Util.Constants;
-import Util.Path;
 import Util.Vector;
 
 import java.util.ArrayList;
 
+import OldPathing.Path;
 import Simulator.Draw.Graph;
 
 /**

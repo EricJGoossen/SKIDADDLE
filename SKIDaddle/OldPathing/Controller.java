@@ -12,7 +12,6 @@ import Util.MotionState;
 import Util.Vector;
 import Util.AccelerationCommands.AccelerationCommand;
 import Util.AccelerationCommands.MotorCommand;
-import Util.Path;
 import Util.Twist;
 
 import java.awt.Color;

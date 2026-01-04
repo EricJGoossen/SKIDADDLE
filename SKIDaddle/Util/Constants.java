@@ -26,7 +26,7 @@ public class Constants {
     public static final double ANGLE_EPSILON = Math.toRadians(5);  // acceptable angular error (rad)
 
     // Path generation
-    public static final double LINE_APPROX_EPSILON = 0.01; // threshold when a curve is approximated as a line
+    public static final double LINE_APPROX_EPSILON = 1; // threshold when a curve is approximated as a line
     public static final double LOOK_AHEAD_FACTOR = 10;   // scale factor for look-ahead distance
     public static final MotionState INIT_STATE = new MotionState(); // default starting state
 

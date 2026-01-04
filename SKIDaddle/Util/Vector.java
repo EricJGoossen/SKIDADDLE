@@ -142,6 +142,10 @@ public class Vector {
         return v.minus(this).norm();
     }
 
+    public double dist(Vector v) {
+        return v.minus(this).hypot();
+    }
+
     /**
      * Computes the angle of this vector relative to the Y-axis.
      *

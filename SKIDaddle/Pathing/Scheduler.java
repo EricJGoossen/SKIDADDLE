@@ -1,20 +1,20 @@
 package Pathing;
 
 import Util.AccelerationCommands.AccelerationCommand;
+import Util.Path.Arc;
 
 import java.util.ArrayList;
 
 import Pathing.Controllers.DefaultController;
 import Pathing.Controllers.DefaultController.CommandGenerator;
 import Util.MotionState;
-import Util.PathSegment;
 
 public class Scheduler {
 
     public interface AccelerationController {
         void init();
-        AccelerationCommand[] update(MotionState state, PathSegment segment, double deltaT);
-        boolean running(MotionState state, PathSegment segment, double deltaT);
+        AccelerationCommand[] update(MotionState state, Arc arc, double deltaT);
+        boolean running(MotionState state, Arc arc, double deltaT);
         boolean interrupt();
         boolean terminate();
     }
@@ -34,13 +34,13 @@ public class Scheduler {
         }
     }
 
-    public AccelerationCommand[] update(MotionState state, PathSegment segment, double deltaT) {
+    public AccelerationCommand[] update(MotionState state, Arc arc, double deltaT) {
         ArrayList<AccelerationController> deadControllers = new ArrayList<>();
         ArrayList<AccelerationCommand> commands = new ArrayList<>();
 
         for (AccelerationController controller : controllers) {
-            if (controller.running(state, segment, deltaT)) {
-                AccelerationCommand[] newCommands = controller.update(state, segment, deltaT);
+            if (controller.running(state, arc, deltaT)) {
+                AccelerationCommand[] newCommands = controller.update(state, arc, deltaT);
 
                 for (AccelerationCommand command : newCommands) {
                     if (!command.isZero()) commands.add(command);
@@ -53,7 +53,7 @@ public class Scheduler {
         controllers.removeAll(deadControllers);
 
         if (controllers.isEmpty()) {
-            AccelerationCommand[] newCommands = defaultController.update(state, segment, deltaT);
+            AccelerationCommand[] newCommands = defaultController.update(state, arc, deltaT);
 
             for (AccelerationCommand command : newCommands) {
                 if (!command.isZero()) commands.add(command);

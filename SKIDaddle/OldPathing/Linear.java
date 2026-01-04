@@ -4,7 +4,6 @@ import Pathing.LookAhead;
 import Pathing.Kinematics;
 import Simulator.Draw.Graph;
 import Util.Constants;
-import Util.Path;
 import Util.PoseVelAcc;
 import Util.Vector;
 

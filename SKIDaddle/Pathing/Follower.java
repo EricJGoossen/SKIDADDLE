@@ -1,9 +1,8 @@
 package Pathing;
 
-import Util.Path;
-import Util.PathSegment;
 import Util.Twist;
 import Util.AccelerationCommands.AccelerationCommand;
+import Util.Path.Arc;
 import Simulator.Simulator;
 import Simulator.Draw.Graph;
 import Util.Constants;
@@ -11,16 +10,16 @@ import Util.MotionState;
 
 import java.awt.Color;
 
+import Util.Path.Path;
+
 public class Follower {
 
     final Scheduler scheduler;
-    final Kinematics kin;
-    final LookAhead lookAhead;
     final Simulator sim;
     final Graph draw;
 
     MotionState state;
-    PathSegment segment;
+    Arc arc;
     int index = 0;
 
     Path lastPath;
@@ -30,9 +29,7 @@ public class Follower {
         this.state = state;
         this.draw = draw;
 
-        segment = new PathSegment();
-        kin = new Kinematics(Constants.MAX_MOTOR_SPEED, Constants.MAX_MOTOR_ACCELERATION);
-        lookAhead = new LookAhead(kin);
+        arc = new Arc();
         sim = new Simulator(new MotionState(state), draw);
 
         initLog();
@@ -43,16 +40,15 @@ public class Follower {
     public boolean update(MotionState sensorState, Path path, double deltaT) {
         index++;
         if (lastPath != path) {
-            segment.set(path, 1);
-            segment.maxVel = lookAhead.compute(path.points(), segment.idx, state.vel.lin.hypot());
-            segment.transitionDistance = segment.idx < path.points().length - 1 ?
-                kin.decelTravel(segment.maxVel, segment.last.dir(segment.current), segment.current.dir(segment.next)) :
+            arc = path.arc(0);
+            arc.transition = arc.index < path.size() - 1 ?
+                Kinematics.decelTravel(arc.vel, arc, path.arc(1)) :
                 0.0;
 
             scheduler.init();
         }
 
-        AccelerationCommand[] commands = scheduler.update(state, segment, deltaT);
+        AccelerationCommand[] commands = scheduler.update(state, arc, deltaT);
 
         if (scheduler.isFinished() && commands.length == 0) {
             return true;
@@ -63,8 +59,8 @@ public class Follower {
         //State integration
         updateState(accel, deltaT);
 
-        if (segment.idx < path.points().length - 1) {
-            segmentTracker(path);
+        if (arc.index < path.size() - 1) {
+            arcTracker(path);
         }
 
         log(path);
@@ -81,22 +77,21 @@ public class Follower {
         state.pos = state.pos.plus(state.vel.times(deltaT));
     }
 
-    public void segmentTracker(Path path) {
-        double dist = segment.distAlongSegment(state.pos.lin);
+    public void arcTracker(Path path) {
+        double dist = arc.distAlongSegment(state.pos.lin);
+        Arc next = path.arc(arc.index + 1);
 
-        // Predict distance needed to decelerate to next segment
-        double decelDist = kin.decelTravel(
-            state.vel.lin.project(segment.last.dir(segment.current)), segment.last.dir(segment.current), segment.current.dir(segment.next)
+        // Predict distance needed to decelerate to next arc
+        double decelDist = Kinematics.decelTravel(
+            state.vel.lin.project(arc.current.dir), arc, next
         );
 
-        // Handle segment transition
+        // Handle arc transition
         if ((decelDist > dist || decelDist < 0)) {
-            segment.advance(path);
+            arc = next;
 
-            segment.maxVel = lookAhead.compute(path.points(), segment.idx, state.vel.lin.hypot());
-
-            segment.transitionDistance = segment.idx < path.points().length - 1 ?
-                kin.decelTravel(segment.maxVel, segment.last.dir(segment.current), segment.current.dir(segment.next)) :
+            arc.transition = arc.index < path.size() - 1 ?
+                Kinematics.decelTravel(arc.vel, arc, path.arc(arc.index + 1)) :
                 0.0;
         }
     }
@@ -104,12 +99,12 @@ public class Follower {
     private void log(Path path) {
         if (!Constants.SIMULATING || draw == null) return;
 
-        path.draw(segment.idx, draw, state.pos.lin);
+        path.draw(arc.index, draw, state.pos.lin);
         draw.addPathData("Path traveled", state.pos.lin);
 
         draw.addChartData("vel", Math.abs(state.vel.toMotorSpace(state.pos.ang).max()));
         draw.addChartData("accel", Math.abs(state.accel.toMotorSpace(state.pos.ang).max()));
-        draw.addChartData("max", segment.maxVel.hypot());
+        draw.addChartData("max", arc.vel.hypot());
     }
 
     /**

@@ -4,7 +4,6 @@ package OldPathing;
 import Simulator.PathCreater;
 import Simulator.Draw.Graph;
 import Util.Constants;
-import Util.Path;
 import Util.PoseVelAcc;
 import Util.Vector;
 import Util.MotionState;

@@ -2,16 +2,16 @@ package Pathing;
 
 import Util.Angle;
 import Util.Constants;
-import Util.PathSegment;
 import Util.Vector;
+import Util.Path.Arc;
 
 /**
  * Handles forward and inverse kinematics for a mecanum drive.
  * Converts robot-relative velocity and acceleration into individual wheel motions.
  */
-public class Kinematics {
-    private final double motorVelCap;
-    private final double motorAccel;
+public final class Kinematics {
+    private static final double VEL_CAP = Constants.MAX_MOTOR_SPEED;
+    private static final double ACCEL = Constants.MAX_MOTOR_ACCELERATION;
 
     /**
      * Result of deceleration travel calculation along current and next segments.
@@ -26,25 +26,14 @@ public class Kinematics {
         }
     }
 
-    /**
-     * Constructs a Kinematics object.
-     *
-     * @param maxSpeed Maximum allowable speed
-     * @param accel    Maximum acceleration
-     */
-    protected Kinematics(double motorVelCap, double motorAccel) {
-        this.motorVelCap = motorVelCap;
-        this.motorAccel = motorAccel;
-    }
-
     private static double findAccel(Vector dir) {
-        return Constants.MAX_MOTOR_ACCELERATION / (Math.abs(dir.x) + Math.abs(dir.y));
+        return ACCEL / (Math.abs(dir.x) + Math.abs(dir.y));
     }
 
     public static double linearSpeedProfile(double exitSpeed, double dist, Vector dir) {
         dist = Math.abs(dist);
 
-        double speed = Constants.MAX_MOTOR_SPEED;
+        double speed = VEL_CAP;
 
         speed = Math.min(speed, Math.sqrt(exitSpeed * exitSpeed + 2.0 * findAccel(dir) * dist));
 
@@ -55,9 +44,9 @@ public class Kinematics {
         double dist = Math.abs(angle.get());
         double R = Constants.TURNING_RADIUS;
 
-        double speed = Constants.MAX_MOTOR_SPEED / R;
+        double speed = VEL_CAP / R;
 
-        speed = Math.min(speed, Math.sqrt(exitSpeed * exitSpeed + 2.0 * Constants.MAX_MOTOR_ACCELERATION / R * dist));
+        speed = Math.min(speed, Math.sqrt(exitSpeed * exitSpeed + 2.0 * ACCEL / R * dist));
 
         return speed;
     }
@@ -71,15 +60,15 @@ public class Kinematics {
      * @param nextSegDir Direction of next segment
      * @return TravelResult with distances along current and next segments
      */
-    protected TravelResult decelTravel(Vector entryVel, double exitSpeed, Vector lastSegDir, Vector nextSegDir) {
-        //Vector lastSegDir = segment.lastSegDir;
-        //Vector nextSegDir = segment.nextSegDir;
+    public static TravelResult decelTravel(Vector entryVel, Arc current, Arc next, double exitSpeed) {
+        Vector currentDir = current.current.dir;
+        Vector nextDir = next.current.dir;
 
         //Split velocity
-        Vector trans = entryVel.transverse(nextSegDir);
+        Vector trans = entryVel.transverse(nextDir);
         double transMag = trans.hypot();
 
-        Vector con = entryVel.convergent(nextSegDir);
+        Vector con = entryVel.convergent(nextDir);
         double conMag = con.hypot();
 
         // Time to decelerate transverse velocity
@@ -91,17 +80,17 @@ public class Kinematics {
         Vector transTravel = transMag == 0 ? new Vector() : trans.div(transMag).times(transDist);
 
         double conDist = conMag * t;
-        Vector conTravel = nextSegDir.times(conDist);
+        Vector conTravel = nextDir.times(conDist);
 
         Vector totalTravel = transTravel.plus(conTravel);
 
         // Project onto last segment
-        Vector lastSegTravel = totalTravel.project(lastSegDir);
+        Vector lastSegTravel = totalTravel.project(currentDir);
         Vector lastSegTanTravel = totalTravel.minus(lastSegTravel);
 
         // Adjust for segment angle
-        double bCrossA = nextSegDir.cross(lastSegDir);
-        double radAdjust = bCrossA == 0 ? 0 : nextSegDir.cross(lastSegTanTravel) / bCrossA;
+        double bCrossA = nextDir.cross(currentDir);
+        double radAdjust = bCrossA == 0 ? 0 : nextDir.cross(lastSegTanTravel) / bCrossA;
 
         double currSegTravel = lastSegTravel.hypot() + radAdjust;
         double nextSegTravel = (conMag * conMag - exitSpeed * exitSpeed) / (2 * accel) + conDist;
@@ -113,8 +102,8 @@ public class Kinematics {
     /**
      * Convenience method returning only current segment travel.
      */
-    protected double decelTravel(Vector entryVel, Vector lastSegDir, Vector nextSegDir) {
-        return decelTravel(entryVel, 0, lastSegDir, nextSegDir).curr;
+    public static double decelTravel(Vector vel, Arc current, Arc next) {
+        return decelTravel(vel, current, next, 0.0).curr;
     }
 
     /**
@@ -125,18 +114,8 @@ public class Kinematics {
      * @param exitSpeed  Required speed at segment end
      * @return Vector representing maximum feasible velocity along segment
      */
-    protected Vector speedOverDist(Vector nextSegDir, double dist, double exitSpeed) {
+    public static Vector speedOverDist(Vector nextSegDir, double dist, double exitSpeed) {
         double speed = Math.sqrt(2 * findAccel(nextSegDir) * dist + exitSpeed * exitSpeed);
         return nextSegDir.times(speed);
-    }
-
-    /**
-     * Computes stopping distance for a given speed.
-     *
-     * @param speed Scalar speed
-     * @return Distance required to stop
-     */
-    protected double stopDist(double speed) {
-        return speed * speed / (2 * motorAccel);
     }
 }

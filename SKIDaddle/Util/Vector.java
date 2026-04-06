@@ -138,8 +138,12 @@ public class Vector {
      * @param p2 target point
      * @return normalized direction vector
      */
-    public Vector dir(Vector p2) {
-        return p2.minus(this).norm();
+    public Vector dir(Vector v) {
+        return v.minus(this).norm();
+    }
+
+    public double dist(Vector v) {
+        return v.minus(this).hypot();
     }
 
     /**
@@ -158,6 +162,13 @@ public class Vector {
      */
     public Vector perp() {
         return new Vector(y, -x);
+    }
+
+    public Vector rotate(double n) {
+        double x =  Math.cos(n) * this.x + Math.sin(n) * this.y;
+        double y = -Math.sin(n) * this.x + Math.cos(n) * this.y;
+
+        return new Vector(x, y);
     }
 
     // Projection helpers

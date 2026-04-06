@@ -1,5 +1,7 @@
 package Util;
 
+import Pathing.SpaceKinematics;
+
 /**
  * Represents a 2D twist consisting of linear and angular components.
  * <p>
@@ -13,7 +15,7 @@ public class Twist {
     public Vector lin;
 
     /** Angular component of the twist */
-    public Vector ang;
+    public double ang;
 
     /**
      * Constructs a twist from explicit linear and angular vectors.
@@ -21,22 +23,9 @@ public class Twist {
      * @param lin linear vector component
      * @param ang angular vector component
      */
-    public Twist(Vector lin, Vector ang) {
+    public Twist(Vector lin, double ang) {
         this.lin = lin;
         this.ang = ang;
-    }
-
-    /**
-     * Constructs a twist from dual values.
-     * The linear components form a vector from (x.linear, y.linear),
-     * while the angular components form a vector from (x.angular, y.angular).
-     *
-     * @param x dual containing x-axis values
-     * @param y dual containing y-axis values
-     */
-    public Twist(Dual x, Dual y) {
-        this.lin = new Vector(x.linear, y.linear);
-        this.ang = new Vector(x.angular, y.angular);
     }
 
     /**
@@ -54,7 +43,7 @@ public class Twist {
      */
     public Twist() {
         this.lin = new Vector();
-        this.ang = new Vector();
+        this.ang = 0;
     }
 
     // ------------------------------------------------------------
@@ -68,7 +57,7 @@ public class Twist {
      * @return a new twist representing the sum
      */
     public Twist plus(Twist t) {
-        return new Twist(lin.plus(t.lin), ang.plus(t.ang));
+        return new Twist(lin.plus(t.lin), ang + t.ang);
     }
 
     /**
@@ -78,7 +67,7 @@ public class Twist {
      * @return a new twist representing the difference
      */
     public Twist minus(Twist t) {
-        return new Twist(lin.minus(t.lin), ang.minus(t.ang));
+        return new Twist(lin.minus(t.lin), ang - t.ang);
     }
 
     /**
@@ -88,7 +77,7 @@ public class Twist {
      * @return a new twist scaled by {@code n}
      */
     public Twist times(double n) {
-        return new Twist(lin.times(n), ang.times(n));
+        return new Twist(lin.times(n), ang * n);
     }
 
     /**
@@ -98,7 +87,7 @@ public class Twist {
      * @return a new twist scaled by {@code d}
      */
     public Twist times(Dual d) {
-        return new Twist(lin.times(d.linear), ang.times(d.angular));
+        return new Twist(lin.times(d.linear), ang * d.angular);
     }
 
     /**
@@ -108,7 +97,7 @@ public class Twist {
      * @return a new twist divided by {@code n}
      */
     public Twist div(double n) {
-        return new Twist(lin.div(n), ang.div(n));
+        return new Twist(lin.div(n), ang / n);
     }
 
     /**
@@ -118,17 +107,14 @@ public class Twist {
      * @return a new twist divided by {@code d}
      */
     public Twist div(Dual d) {
-        return new Twist(lin.div(d.linear), ang.div(d.angular));
+        return new Twist(lin.div(d.linear), ang / d.angular);
     }
 
-    /**
-     * Computes the dot product of this twist with a vector,
-     * producing a dual (linear dot and angular dot).
-     *
-     * @param v the vector to dot with
-     * @return a dual containing (linear dot, angular dot)
-     */
-    public Dual dot(Vector v) {
-        return new Dual(lin.dot(v), ang.dot(v));
+    public double sum() {
+        return lin.hypot() + ang;
+    } 
+
+    public MotorVector toMotorSpace(double angle) {
+        return SpaceKinematics.inverse(this, angle);
     }
 }

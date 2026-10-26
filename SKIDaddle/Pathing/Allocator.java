@@ -26,6 +26,8 @@ public final class Allocator {
         MotorVector norm = limit.normalize();
 
         for (int i = 0; i < limit.motorCount(); i++) {
+            // A wheel this command doesn't use shouldn't limit it
+            if (Math.abs(norm.speeds[i]) < ZERO_TOLERANCE) continue;
             int dir = (int) Math.signum(limit.speeds[i]);
 
             double available = Math.abs(dir - headroom.speeds[i]);
@@ -38,7 +40,7 @@ public final class Allocator {
             maxScale = Math.min(maxScale, motorScale);
         }
 
-        return maxScale;
+        return Double.isInfinite(maxScale) ? 0.0 : maxScale;
     }
 
     private static Allocation[] sort(Allocation[] intents) {
@@ -58,6 +60,12 @@ public final class Allocator {
         }
 
         return intents;
+    }
+
+    private static int lowestPriority(Allocation[] intents, int numActive) {
+        int lowest = Integer.MAX_VALUE;
+        for (int i = 0; i < numActive; i++) lowest = Math.min(lowest, intents[i].cmd.priority);
+        return lowest;
     }
 
     private static MotorVector findHeadroom(MotorVector vel, double deltaT) {
@@ -109,15 +117,24 @@ public final class Allocator {
                 double scale = maxScaleForCommand(intent.vector, headroom, intent.weight / weightSum);
 
                 MotorVector scales = intent.vector.normalize().times(scale);
-                boolean allocated = Math.abs(scales.max() * ACCEL - intent.vector.max()) < ZERO_TOLERANCE;
+                // A command is done when everything given to it so far, not just this
+                // round's share, covers what it asked for.
+                MotorVector total = scales.plus(intents[i].scales);
+                boolean allocated = Math.abs(total.max() * ACCEL - intent.vector.max()) < ZERO_TOLERANCE;
 
                 deltaHeadroom = deltaHeadroom.plus(scales);
-                intents[i] = new Allocation(intent, scales.plus(intents[i].scales), allocated);
+                intents[i] = new Allocation(intent, total, allocated);
             }
 
             headroom = headroom.plus(deltaHeadroom);
-            if (exhausted(headroom)) {
-                if (priorityRound <= 0) break;
+            // Move down a priority when the headroom is used up, or when this round gave
+            // nothing more to anyone 
+            boolean progressed = false;
+            for (int i = 0; i < deltaHeadroom.motorCount(); i++) {
+                if (Math.abs(deltaHeadroom.speeds[i]) > ZERO_TOLERANCE) progressed = true;
+            }
+            if (exhausted(headroom) || !progressed) {
+                if (priorityRound <= lowestPriority(intents, numActive) || priorityRound <= 0) break;
                 priorityRound--;
             }
 
